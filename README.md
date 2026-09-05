@@ -28,3 +28,7 @@ Built and tested entirely within Termux on Android (aarch64), using:
 - Original game: Crack dot Com (1995)
 - Modern SDL2 source port: [apancik/Abuse_2025](https://github.com/apancik/Abuse_2025)
 - Android port: this repo
+
+## Contributing
+
+Feel free to contribute! Touch controls in particular are still rough and could use love — PRs welcome for better touch/on-screen input, bug fixes, or general improvements.
