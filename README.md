@@ -26,7 +26,7 @@ Built and tested entirely within Termux on Android (aarch64), using:
 
 ## Credits
 
-- Original game: Crack dot Com (1995)
+- Original game: Crack dot Com (1996)
 - Modern SDL2 source port: [apancik/Abuse_2025](https://github.com/apancik/Abuse_2025)
 - Android port: this repo
 
