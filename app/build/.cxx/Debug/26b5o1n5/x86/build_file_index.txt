@@ -1,2 +1,0 @@
-/data/data/com.termux/files/home/abuse-android/app/jni/Android.mk
-/data/data/com.termux/files/home/abuse-android/app/jni/Application.mk
