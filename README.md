@@ -11,7 +11,7 @@ Compiled entirely on-device using Termux (no PC/laptop required) — Android NDK
 - ✅ Fullscreen rendering
 - ✅ Bundled game data (extracted from APK assets on first launch)
 - ✅ Gamepad / Bluetooth controller support (via SDL_GameController — recommended)
-- ⚠️ On-screen touch controls: not yet included. **Best played with a gamepad or Bluetooth controller** for now.
+- ⚠️ On-screen touch controls: not yet included. **Best played with a keyboard/mouse, gamepad or Bluetooth controller** for now.
 
 ## Controls
 
