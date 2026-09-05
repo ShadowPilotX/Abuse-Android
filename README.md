@@ -35,3 +35,9 @@ Built and tested entirely within Termux on Android (aarch64), using:
 ## Contributing
 
 Feel free to contribute! Touch controls in particular are still rough and could use love — PRs welcome for better touch/on-screen input, bug fixes, or general improvements.
+
+## License
+
+This project is licensed under GPL-2.0 (see [LICENSE](LICENSE)), consistent with the upstream [apancik/Abuse_2025](https://github.com/apancik/Abuse_2025) source.
+
+The underlying Abuse source code has mixed licensing: original Crack dot Com game code is public domain, while `sdlport/*` files (which this port modifies) are GPL-2.0+, and some `lol/*`/`tools/*` files are WTFPL. GPL-2.0 is applied here as the governing license for the combined work.
