@@ -17,6 +17,8 @@ Compiled entirely on-device using Termux (no PC/laptop required) — Android NDK
 
 **Gamepad (recommended):** D-pad/stick to move, buttons to jump/shoot (standard SDL controller mapping).
 
+(**Touch controls are still WIP** ⌛)
+
 ## Building from source
 
 Built and tested entirely within Termux on Android (aarch64), using:
