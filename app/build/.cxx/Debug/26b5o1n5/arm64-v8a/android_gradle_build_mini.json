@@ -1,0 +1,112 @@
+{
+  "buildFiles": [
+    "/data/data/com.termux/files/home/abuse-android/app/jni/Android.mk",
+    "/data/data/com.termux/files/home/abuse-android/app/jni/Application.mk"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/data/data/com.termux/files/home/android-sdk/ndk-aarch64/ndk-build",
+      "NDK_PROJECT_PATH\u003dnull",
+      "APP_BUILD_SCRIPT\u003d/data/data/com.termux/files/home/abuse-android/app/jni/Android.mk",
+      "NDK_APPLICATION_MK\u003d/data/data/com.termux/files/home/abuse-android/app/jni/Application.mk",
+      "APP_ABI\u003darm64-v8a",
+      "NDK_ALL_ABIS\u003darm64-v8a",
+      "NDK_DEBUG\u003d1",
+      "NDK_OUT\u003d/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj",
+      "NDK_LIBS_OUT\u003d/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/lib",
+      "APP_PLATFORM\u003dandroid-24",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/data/data/com.termux/files/home/android-sdk/ndk-aarch64/ndk-build",
+    "NDK_PROJECT_PATH\u003dnull",
+    "APP_BUILD_SCRIPT\u003d/data/data/com.termux/files/home/abuse-android/app/jni/Android.mk",
+    "NDK_APPLICATION_MK\u003d/data/data/com.termux/files/home/abuse-android/app/jni/Application.mk",
+    "APP_ABI\u003darm64-v8a",
+    "NDK_ALL_ABIS\u003darm64-v8a",
+    "NDK_DEBUG\u003d1",
+    "NDK_OUT\u003d/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj",
+    "NDK_LIBS_OUT\u003d/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/lib",
+    "APP_PLATFORM\u003dandroid-24",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "main-debug-arm64-v8a": {
+      "artifactName": "main",
+      "buildCommandComponents": [
+        "/data/data/com.termux/files/home/android-sdk/ndk-aarch64/ndk-build",
+        "NDK_PROJECT_PATH\u003dnull",
+        "APP_BUILD_SCRIPT\u003d/data/data/com.termux/files/home/abuse-android/app/jni/Android.mk",
+        "NDK_APPLICATION_MK\u003d/data/data/com.termux/files/home/abuse-android/app/jni/Application.mk",
+        "APP_ABI\u003darm64-v8a",
+        "NDK_ALL_ABIS\u003darm64-v8a",
+        "NDK_DEBUG\u003d1",
+        "NDK_OUT\u003d/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj",
+        "NDK_LIBS_OUT\u003d/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/lib",
+        "APP_PLATFORM\u003dandroid-24",
+        "/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj/local/arm64-v8a/libmain.so"
+      ],
+      "abi": "arm64-v8a",
+      "output": "/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj/local/arm64-v8a/libmain.so",
+      "runtimeFiles": []
+    },
+    "SDL2_mixer-debug-arm64-v8a": {
+      "artifactName": "SDL2_mixer",
+      "buildCommandComponents": [
+        "/data/data/com.termux/files/home/android-sdk/ndk-aarch64/ndk-build",
+        "NDK_PROJECT_PATH\u003dnull",
+        "APP_BUILD_SCRIPT\u003d/data/data/com.termux/files/home/abuse-android/app/jni/Android.mk",
+        "NDK_APPLICATION_MK\u003d/data/data/com.termux/files/home/abuse-android/app/jni/Application.mk",
+        "APP_ABI\u003darm64-v8a",
+        "NDK_ALL_ABIS\u003darm64-v8a",
+        "NDK_DEBUG\u003d1",
+        "NDK_OUT\u003d/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj",
+        "NDK_LIBS_OUT\u003d/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/lib",
+        "APP_PLATFORM\u003dandroid-24",
+        "/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj/local/arm64-v8a/libSDL2_mixer.so"
+      ],
+      "abi": "arm64-v8a",
+      "output": "/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj/local/arm64-v8a/libSDL2_mixer.so",
+      "runtimeFiles": []
+    },
+    "SDL2-debug-arm64-v8a": {
+      "artifactName": "SDL2",
+      "buildCommandComponents": [
+        "/data/data/com.termux/files/home/android-sdk/ndk-aarch64/ndk-build",
+        "NDK_PROJECT_PATH\u003dnull",
+        "APP_BUILD_SCRIPT\u003d/data/data/com.termux/files/home/abuse-android/app/jni/Android.mk",
+        "NDK_APPLICATION_MK\u003d/data/data/com.termux/files/home/abuse-android/app/jni/Application.mk",
+        "APP_ABI\u003darm64-v8a",
+        "NDK_ALL_ABIS\u003darm64-v8a",
+        "NDK_DEBUG\u003d1",
+        "NDK_OUT\u003d/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj",
+        "NDK_LIBS_OUT\u003d/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/lib",
+        "APP_PLATFORM\u003dandroid-24",
+        "/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj/local/arm64-v8a/libSDL2.so"
+      ],
+      "abi": "arm64-v8a",
+      "output": "/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj/local/arm64-v8a/libSDL2.so",
+      "runtimeFiles": []
+    },
+    "cpufeatures-debug-arm64-v8a": {
+      "artifactName": "cpufeatures",
+      "buildCommandComponents": [
+        "/data/data/com.termux/files/home/android-sdk/ndk-aarch64/ndk-build",
+        "NDK_PROJECT_PATH\u003dnull",
+        "APP_BUILD_SCRIPT\u003d/data/data/com.termux/files/home/abuse-android/app/jni/Android.mk",
+        "NDK_APPLICATION_MK\u003d/data/data/com.termux/files/home/abuse-android/app/jni/Application.mk",
+        "APP_ABI\u003darm64-v8a",
+        "NDK_ALL_ABIS\u003darm64-v8a",
+        "NDK_DEBUG\u003d1",
+        "NDK_OUT\u003d/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj",
+        "NDK_LIBS_OUT\u003d/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/lib",
+        "APP_PLATFORM\u003dandroid-24",
+        "/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj/local/arm64-v8a/libcpufeatures.a"
+      ],
+      "abi": "arm64-v8a",
+      "output": "/data/data/com.termux/files/home/abuse-android/app/build/intermediates/cxx/Debug/26b5o1n5/obj/local/arm64-v8a/libcpufeatures.a",
+      "runtimeFiles": []
+    }
+  }
+}
