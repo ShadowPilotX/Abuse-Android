@@ -15,7 +15,12 @@ Compiled entirely on-device using Termux (no PC/laptop required) — Android NDK
 
 ## Controls
 
-**Gamepad (recommended):** D-pad/stick to move, buttons to jump/shoot (standard SDL controller mapping).
+**Keyboard and Mouse:**
+<img width="960" height="600" alt="1000660872" src="https://github.com/user-attachments/assets/a44ec3c3-613a-41e1-81e1-11651f7c6280" />
+
+To better reflect modern game controls, the original arrow key controls have been replaced with WASD for movement. Mouse controls aim, left button shoots, right button activates special powers, and mouse scroll switches between weapons.
+
+**Gamepad:** D-pad/stick to move, buttons to jump/shoot (standard SDL controller mapping).
 
 (**Touch controls are still WIP** ⌛)
 
