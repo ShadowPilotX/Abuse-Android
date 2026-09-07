@@ -22,7 +22,7 @@ To better reflect modern game controls, the original arrow key controls have bee
 
 **Gamepad:** D-pad/stick to move, buttons to jump/shoot (standard SDL controller mapping).
 
-(**Touch controls are still WIP** ⌛)
+**Touch controls:** Native touch controls are planned for a future update.
 
 ## Building from source
 
