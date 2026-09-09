@@ -1,5 +1,6 @@
+<img width="1810" height="592" alt="1000661176" src="https://github.com/user-attachments/assets/b3922b02-780d-41a8-8f2b-6fd40bd9502a" />
+
 ## Abuse (1996) — Android Port
-<img width="2460" height="1080" alt="1000659808" src="https://github.com/user-attachments/assets/65d90094-2877-4e61-8d95-a320b4cf144c" />
 
 A native Android port of the classic 1996 dark sci-fi platformer **Abuse** by Crack dot Com, built on top of [apancik/Abuse_2025](https://github.com/apancik/Abuse_2025) (SDL2 fork) via the SDL Android project template.
 
