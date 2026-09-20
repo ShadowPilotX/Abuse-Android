@@ -25,6 +25,7 @@
 #endif
 #include <ctype.h>
 #include <setjmp.h>
+#include <jni.h>
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
@@ -1184,7 +1185,7 @@ void do_title()
             current_song->stop();
             delete current_song;
         }
-        current_song = new song("music/intro.hmi");
+        current_song = new song("music/intro.ogg");
         current_song->play(music_volume);
     }
 
@@ -1909,6 +1910,13 @@ void Game::step()
 
         // AR
         settings.in_game = true;
+        SDL_Event force_release;
+        force_release.type = SDL_MOUSEBUTTONUP;
+        force_release.button.button = SDL_BUTTON_LEFT;
+        force_release.button.state = SDL_RELEASED;
+        force_release.button.x = 0;
+        force_release.button.y = 0;
+        SDL_PushEvent(&force_release);
 
         if (settings.cheat_god)
           f->god = 1;
@@ -2279,7 +2287,7 @@ void music_check()
 	{
 		if(!current_song)
 		{
-			current_song = new song("music/intro.hmi");
+			current_song = new song("music/intro.ogg");
 			current_song->play(music_volume);
 
 			/*      if(DEFINEDP(symbol_function(l_next_song)))  // if user function installed, call it to load up next song
@@ -2333,20 +2341,80 @@ void game_net_init(int argc, char **argv)
 #include <signal.h>
 #include <unistd.h>
 
-static void abuse_crash_handler(int sig) {
+#include <fcntl.h>
+#include <dlfcn.h>
+#include <unwind.h>
+#include <cstdio>
+
+struct BacktraceState {
+    void** current;
+    void** end;
+};
+
+static _Unwind_Reason_Code unwindCallback(struct _Unwind_Context* context, void* arg) {
+    BacktraceState* state = static_cast<BacktraceState*>(arg);
+    uintptr_t pc = _Unwind_GetIP(context);
+    if (pc) {
+        if (state->current == state->end) return _URC_END_OF_STACK;
+        *state->current++ = reinterpret_cast<void*>(pc);
+    }
+    return _URC_NO_REASON;
+}
+
+static void abuse_crash_handler_info(int sig, siginfo_t *info, void *ucontext) {
     const char *names[] = {"","SIGHUP","SIGINT","SIGQUIT","SIGILL","SIGTRAP","SIGABRT","SIGBUS","SIGFPE","SIGKILL","SIGUSR1","SIGSEGV"};
-    char msg[128];
-    snprintf(msg, sizeof(msg), "Signal %d (%s)", sig, (sig >= 0 && sig < 12) ? names[sig] : "unknown");
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Native Crash", msg, NULL);
+
+    char buf[4096];
+    int len = 0;
+    len += snprintf(buf + len, sizeof(buf) - len, "Signal %d (%s), fault addr: %p\n",
+                     sig, (sig >= 0 && sig < 12) ? names[sig] : "unknown", info->si_addr);
+
+    void* frames[32];
+    BacktraceState state = {frames, frames + 32};
+    _Unwind_Backtrace(unwindCallback, &state);
+    int frame_count = state.current - frames;
+
+    len += snprintf(buf + len, sizeof(buf) - len, "Backtrace (%d frames):\n", frame_count);
+
+    for (int i = 0; i < frame_count && len < (int)sizeof(buf) - 200; i++) {
+        Dl_info dlinfo;
+        if (dladdr(frames[i], &dlinfo) && dlinfo.dli_fname) {
+            uintptr_t offset = (uintptr_t)frames[i] - (uintptr_t)dlinfo.dli_fbase;
+            len += snprintf(buf + len, sizeof(buf) - len, "  #%02d %s+0x%lx (%s)\n",
+                             i, dlinfo.dli_fname, (unsigned long)offset,
+                             dlinfo.dli_sname ? dlinfo.dli_sname : "?");
+        } else {
+            len += snprintf(buf + len, sizeof(buf) - len, "  #%02d %p (unresolved)\n", i, frames[i]);
+        }
+    }
+
+    int fd = open("/sdcard/Download/native_crash.log", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (fd >= 0) {
+        write(fd, buf, len);
+        close(fd);
+    }
+
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Native Crash", buf, NULL);
     _exit(1);
+}
+
+static void abuse_crash_handler(int sig) {
+    // Kept for compatibility; not used directly anymore, see sigaction registration below.
+    (void)sig;
 }
 
 int SDL_main(int argc, char *argv[])
 {
-    signal(SIGSEGV, abuse_crash_handler);
-    signal(SIGABRT, abuse_crash_handler);
-    signal(SIGBUS, abuse_crash_handler);
-    signal(SIGILL, abuse_crash_handler);
+    {
+        struct sigaction sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sa_sigaction = abuse_crash_handler_info;
+        sa.sa_flags = SA_SIGINFO;
+        sigaction(SIGSEGV, &sa, NULL);
+        sigaction(SIGABRT, &sa, NULL);
+        sigaction(SIGBUS, &sa, NULL);
+        sigaction(SIGILL, &sa, NULL);
+    }
   start_argc = argc;
   start_argv = argv;
 
@@ -2586,4 +2654,16 @@ int SDL_main(int argc, char *argv[])
   sound_uninit();
 
   return 0;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_org_libsdl_app_MainActivity_nativeIsInGame(JNIEnv *env, jclass clazz)
+{
+    return settings.in_game ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_org_libsdl_app_MainActivity_nativeIsMenuOpen(JNIEnv *env, jclass clazz)
+{
+    return (wm != NULL && wm->m_first != NULL) ? JNI_TRUE : JNI_FALSE;
 }

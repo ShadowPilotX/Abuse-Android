@@ -239,6 +239,7 @@ void sound_effect::play(int volume, int pitch, int panpot)
  *
  * @param filename Path to the music file
  */
+
 song::song(char const *filename)
     : data(nullptr) // Raw music data
       ,
@@ -253,32 +254,82 @@ song::song(char const *filename)
 
     try
     {
-        // Load HMI format music file into memory
-        uint32_t data_size;
-        data = load_hmi(filename, data_size);
+        size_t len = strlen(filename);
+        bool is_ogg = (len > 4 && strcmp(filename + len - 4, ".ogg") == 0);
 
-        if (!data)
+        if (is_ogg)
         {
-            printf("Sound: ERROR - could not load %s\n", filename);
-            return;
+            FILE *oggfile = prefix_fopen(filename, "rb");
+            if (!oggfile)
+            {
+                printf("Sound: ERROR - could not open %s\n", filename);
+                return;
+            }
+
+            fseek(oggfile, 0, SEEK_END);
+            long ogg_size = ftell(oggfile);
+            fseek(oggfile, 0, SEEK_SET);
+
+            if (ogg_size <= 0)
+            {
+                fclose(oggfile);
+                printf("Sound: ERROR - empty or unreadable file %s\n", filename);
+                return;
+            }
+
+            data = (unsigned char *)malloc(ogg_size);
+            if (!data || fread(data, 1, ogg_size, oggfile) != (size_t)ogg_size)
+            {
+                fclose(oggfile);
+                printf("Sound: ERROR - could not read %s\n", filename);
+                return;
+            }
+            fclose(oggfile);
+
+            rw = SDL_RWFromMem(data, ogg_size);
+            if (!rw)
+            {
+                printf("Sound: ERROR - could not create RWops for %s\n", filename);
+                return;
+            }
+
+            music = Mix_LoadMUS_RW(rw, SDL_FALSE);
+
+            if (!music)
+            {
+                printf("Sound: ERROR - %s while loading %s\n",
+                       Mix_GetError(), filename);
+            }
         }
-
-        // Create SDL_RWops for memory-based playback
-        rw = SDL_RWFromMem(data, data_size);
-        if (!rw)
+        else
         {
-            printf("Sound: ERROR - could not create RWops for %s\n",
-                   filename);
-            return;
-        }
+            // Load HMI format music file into memory
+            uint32_t data_size;
+            data = load_hmi(filename, data_size);
 
-        // Load music using SDL_mixer
-        music = Mix_LoadMUS_RW(rw, SDL_FALSE); // 0 means don't free the rwops
+            if (!data)
+            {
+                printf("Sound: ERROR - could not load %s\n", filename);
+                return;
+            }
 
-        if (!music)
-        {
-            printf("Sound: ERROR - %s while loading %s\n",
-                   Mix_GetError(), filename);
+            // Create SDL_RWops for memory-based playback
+            rw = SDL_RWFromMem(data, data_size);
+            if (!rw)
+            {
+                printf("Sound: ERROR - could not create RWops for %s\n",
+                       filename);
+                return;
+            }
+
+            // Load music using SDL_mixer
+            music = Mix_LoadMUS_RW(rw, SDL_FALSE); // 0 means don't free the rwops
+
+            if (!music)
+            {
+                printf("Sound: ERROR - %s while loading %s\n",
+                       Mix_GetError(), filename);
+            }
         }
     }
     catch (const std::exception &e)
@@ -298,12 +349,22 @@ song::~song()
     if (playing())
         stop();
 
-    free(data); // Using free because it was allocated by load_hmi    
-
+    // Free the decoder object FIRST (it may still reference the RWops/buffer
+    // during cleanup for streaming formats like OGG), THEN the RWops,
+    // and only THEN the raw data buffer. Freeing data before Mix_FreeMusic
+    // caused a use-after-free / heap corruption crash with OGG streaming.
     if (music)
+    {
         Mix_FreeMusic(music);
+        music = nullptr;
+    }
     if (rw)
+    {
         SDL_FreeRW(rw);
+        rw = nullptr;
+    }
+    free(data); // Using free because it was allocated by load_hmi (or malloc for OGG)
+    data = nullptr;
 }
 
 /**

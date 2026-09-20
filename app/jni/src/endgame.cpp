@@ -491,7 +491,7 @@ void show_end()
 	//AR real end screen
 	//since there is a victory.hmi in the music folder my guess would be that it was supposed to be played during the end screen
 	//you can even hear him howling in the track, it matches the on screen text
-	bFILE *fp = open_file("music/victory.hmi","rb");
+	bFILE *fp = open_file("music/victory.ogg","rb");
 	if(fp->open_failure()) delete fp;
 	else
 	{
@@ -502,7 +502,7 @@ void show_end()
 			delete current_song;
 		}
 		
-		current_song = new song("music/victory.hmi");
+		current_song = new song("music/victory.ogg");
 		current_song->play(music_volume);
 
 		delete fp;
