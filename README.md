@@ -6,24 +6,24 @@ A native Android port of the classic 1996 dark sci-fi platformer **Abuse** by Cr
 
 Compiled entirely on-device using Termux (no PC/laptop required) — Android NDK, Gradle, and the full toolchain running natively on aarch64.
 
-## Status
+## Data Files
 
-- ✅ Compiles and runs on Android (arm64-v8a, armeabi-v7a, x86, x86_64)
-- ✅ Fullscreen rendering
-- ✅ Bundled game data (extracted from APK assets on first launch)
-- ✅ Gamepad / Bluetooth controller support (via SDL_GameController — recommended)
-- ⚠️ On-screen touch controls: not yet included. **Best played with a keyboard/mouse, gamepad or Bluetooth controller** for now.
+This Android port includes the required game data files needed to play Abuse. The game data is bundled with the application, allowing the game to run without requiring users to manually provide or copy additional files.
+The bundled assets originate from the Abuse_2025 project and its associated game data.
 
 ## Controls
 
 **Keyboard and Mouse:**
-<img width="960" height="600" alt="1000660872" src="https://github.com/user-attachments/assets/a44ec3c3-613a-41e1-81e1-11651f7c6280" />
+
+![hero](https://github.com/user-attachments/assets/a44ec3c3-613a-41e1-81e1-11651f7c6280)
 
 To better reflect modern game controls, the original arrow key controls have been replaced with WASD for movement. Mouse controls aim, left button shoots, right button activates special powers, and mouse scroll switches between weapons.
 
-**Gamepad:** D-pad/stick to move, buttons to jump/shoot (standard SDL controller mapping).
+**Touch controls:**
 
-**Touch controls:** Native touch controls are planned for a future update.
+![hero](https://github.com/user-attachments/assets/7708e3b3-be75-45b2-baef-c8c7c0ecf7f0)
+
+**Gamepad:** D-pad/stick to move, buttons to jump/shoot (standard SDL controller mapping).
 
 ## Building from source
 
@@ -34,7 +34,7 @@ Built and tested entirely within Termux on Android (aarch64), using:
 
 ## Credits
 
-- Original game: Crack dot Com (1996)
+- Origial game: Crack dot Com (1996)
 - Modern SDL2 source port: [apancik/Abuse_2025](https://github.com/apancik/Abuse_2025)
 - Android port: this repo
 
