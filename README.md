@@ -1,6 +1,6 @@
 <img width="1810" height="592" alt="1000661176" src="https://github.com/user-attachments/assets/b3922b02-780d-41a8-8f2b-6fd40bd9502a" />
 
-## Abuse (1996) — Android Port
+# Abuse (1996) — Android Port
 
 A native Android port of the classic 1996 dark sci-fi platformer **Abuse** by Crack dot Com, built on top of [apancik/Abuse_2025](https://github.com/apancik/Abuse_2025) (SDL2 fork) via the SDL Android project template.
 
@@ -24,6 +24,20 @@ To better reflect modern game controls, the original arrow key controls have bee
 ![hero](https://github.com/user-attachments/assets/7708e3b3-be75-45b2-baef-c8c7c0ecf7f0)
 
 **Gamepad:** D-pad/stick to move, buttons to jump/shoot (standard SDL controller mapping).
+
+## Cheats
+
+To use cheats, press <kbd>c</kbd> on the keyboard to open the console. Tap the console window on screen for input and type the desired cheat command. Press <kbd>Enter↩️</kbd> when done, or type "quit"/"exit" to close the console.
+
+Available cheats:
+
+- `god` - Makes you invulnerable to all damage
+- `giveall` - Gives all weapons and maximum ammunition
+- `flypower` - Grants Anti-Gravity Boots effect
+- `sneakypower` - Grants Cloak effect
+- `fastpower` - Grants Flash Speed effect
+- `healthpower` - Grants Ultra-Health effect
+- `nopower` - Removes all active special abilities
 
 ## Building from source
 
