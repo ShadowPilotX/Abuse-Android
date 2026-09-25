@@ -21,7 +21,9 @@ To better reflect modern game controls, the original arrow key controls have bee
 
 **Touch controls:**
 
-![hero](https://github.com/user-attachments/assets/7708e3b3-be75-45b2-baef-c8c7c0ecf7f0)
+![touch controls](https://github.com/user-attachments/assets/624ca56c-1b93-4708-9d16-0600f1593b7a)
+
+Fire/aim: Tap to shoot, or hold and drag to aim. The reticle aiming speed directly tracks your finger movement speed.
 
 **Gamepad:** D-pad/stick to move, buttons to jump/shoot (standard SDL controller mapping).
 
