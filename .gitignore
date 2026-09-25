@@ -8,3 +8,5 @@ local.properties
 .idea/
 *.bak
 *.bak_*
+keystore.properties
+*.keystore
