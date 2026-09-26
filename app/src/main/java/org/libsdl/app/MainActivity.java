@@ -126,12 +126,16 @@ public class MainActivity extends SDLActivity {
 
     private final List<EditableControl> editControls = new ArrayList<>();
 
+    private int dpToPx(float dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
     private GradientDrawable makeControlBg(boolean oval, int strokeColor) {
         GradientDrawable d = new GradientDrawable();
         d.setShape(oval ? GradientDrawable.OVAL : GradientDrawable.RECTANGLE);
         if (!oval) d.setCornerRadius(18f);
         d.setColor(Color.argb(140, 0, 0, 0));
-        d.setStroke(5, strokeColor);
+        d.setStroke(dpToPx(2), strokeColor);
         return d;
     }
 
@@ -184,7 +188,7 @@ public class MainActivity extends SDLActivity {
         GradientDrawable d = new GradientDrawable();
         d.setShape(circular ? GradientDrawable.OVAL : GradientDrawable.RECTANGLE);
         d.setColor(Color.TRANSPARENT);
-        d.setStroke(6, Color.YELLOW);
+        d.setStroke(dpToPx(2), Color.YELLOW);
         hl.setBackground(d);
         hl.setAlpha(1f);
         hl.setClickable(false);
@@ -329,7 +333,7 @@ public class MainActivity extends SDLActivity {
         }
 
         private EditableControl findControlAt(float x, float y) {
-            int pad = 40; // generous hit padding so small buttons are easy to grab
+            int pad = dpToPx(13); // generous hit padding so small buttons are easy to grab
             for (EditableControl c : editControls) {
                 float left = c.btn.getLeft() - pad;
                 float top = c.btn.getTop() - pad;
@@ -403,8 +407,8 @@ public class MainActivity extends SDLActivity {
                         float ddy = event.getY(i1) - event.getY(i2);
                         float dist = (float) Math.sqrt(ddx * ddx + ddy * ddy);
                         float scale = dist / pinchStartDist;
-                        int newW = clampInt((int) (pinchStartW * scale), 60, 600);
-                        int newH = clampInt((int) (pinchStartH * scale), 40, 500);
+                        int newW = clampInt((int) (pinchStartW * scale), dpToPx(20), dpToPx(200));
+                        int newH = clampInt((int) (pinchStartH * scale), dpToPx(13), dpToPx(167));
                         active.lp.width = newW;
                         active.lp.height = newH;
                         active.btn.setLayoutParams(active.lp);
@@ -415,7 +419,7 @@ public class MainActivity extends SDLActivity {
                     if (i1 == -1) return true;
                     float dx = event.getX(i1) - startX;
                     float dy = event.getY(i1) - startY;
-                    final int touchSlop = 20;
+                    final int touchSlop = dpToPx(7);
                     if (!dragging && (Math.abs(dx) > touchSlop || Math.abs(dy) > touchSlop)) {
                         dragging = true;
                         if (longPressRunnable != null) editHandler.removeCallbacks(longPressRunnable);
@@ -476,10 +480,10 @@ public class MainActivity extends SDLActivity {
         editModeBtn.setText("");
         editModeBtn.setAlpha(0.75f);
         editModeBtn.setBackground(makeIconBg(false, Color.argb(210, 255, 255, 255), R.drawable.ic_edit, 24));
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(140, 80);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dpToPx(47), dpToPx(27));
         lp.gravity = Gravity.TOP | Gravity.LEFT;
-        lp.leftMargin = 210; // beside ESC (ESC: margin 20 + size 170 + gap 20)
-        lp.topMargin = 20;
+        lp.leftMargin = dpToPx(70); // beside ESC
+        lp.topMargin = dpToPx(7);
         editModeBtn.setLayoutParams(lp);
         editModeBtn.setOnClickListener(v -> {
             setEditMode(!editMode);
@@ -496,10 +500,10 @@ public class MainActivity extends SDLActivity {
         resetBtn.setText("");
         resetBtn.setAlpha(0.75f);
         resetBtn.setBackground(makeIconBg(false, Color.argb(220, 220, 60, 50), R.drawable.ic_refresh, 24));
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(140, 80);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dpToPx(47), dpToPx(27));
         lp.gravity = Gravity.TOP | Gravity.LEFT;
-        lp.leftMargin = 370; // beside EDIT (EDIT: left 210 + width 140 + gap 20)
-        lp.topMargin = 20;
+        lp.leftMargin = dpToPx(123); // beside EDIT
+        lp.topMargin = dpToPx(7);
         resetBtn.setLayoutParams(lp);
         resetBtn.setVisibility(View.GONE);
         resetBtn.setOnClickListener(v -> resetAllLayouts());
@@ -517,15 +521,15 @@ public class MainActivity extends SDLActivity {
         btn.setAlpha(loadLayoutAlpha(id, baseAlpha));
         btn.setBackground(makeControlBg(false, Color.argb(210, 255, 255, 255)));
         int gravity = Gravity.TOP | Gravity.RIGHT;
-        final FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(140, 80);
+        final FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dpToPx(47), dpToPx(27));
         lp.gravity = gravity;
-        lp.rightMargin = 440;
-        lp.topMargin = 10;
+        lp.rightMargin = dpToPx(147);
+        lp.topMargin = dpToPx(3);
         int baseLeft = 0, baseTop = lp.topMargin, baseRight = lp.rightMargin, baseBottom = 0;
-        applyLayoutOverride(id, lp, 140, 80);
+        applyLayoutOverride(id, lp, dpToPx(47), dpToPx(27));
         btn.setLayoutParams(lp);
         parent.addView(btn);
-        registerEditable(id, btn, lp, false, gravity, baseLeft, baseTop, baseRight, baseBottom, 140, 80, baseAlpha);
+        registerEditable(id, btn, lp, false, gravity, baseLeft, baseTop, baseRight, baseBottom, dpToPx(47), dpToPx(27), baseAlpha);
         btn.setOnClickListener(v -> {
             android.view.inputmethod.InputMethodManager imm =
                 (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
@@ -623,29 +627,29 @@ public class MainActivity extends SDLActivity {
         FrameLayout.LayoutParams flp = new FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
-        int btnSize = 170;
+        int btnSize = dpToPx(57);
 
         // Movement D-pad (bottom-left)
-        addBtn(touchOverlay, "<", Gravity.BOTTOM | Gravity.LEFT, 140, 80, btnSize, KeyEvent.KEYCODE_DPAD_LEFT, false, R.drawable.ic_chevron_left);
-        addBtn(touchOverlay, ">", Gravity.BOTTOM | Gravity.LEFT, 500, 80, btnSize, KeyEvent.KEYCODE_DPAD_RIGHT, false, R.drawable.ic_chevron_right);
-        addBtn(touchOverlay, "^", Gravity.BOTTOM | Gravity.LEFT, 320, 260, btnSize, KeyEvent.KEYCODE_DPAD_UP, false, R.drawable.ic_expand_less);
-        addBtn(touchOverlay, "v", Gravity.BOTTOM | Gravity.LEFT, 320, 80, btnSize, KeyEvent.KEYCODE_DPAD_DOWN, false, R.drawable.ic_expand_more);
+        addBtn(touchOverlay, "<", Gravity.BOTTOM | Gravity.LEFT, dpToPx(47), dpToPx(27), btnSize, KeyEvent.KEYCODE_DPAD_LEFT, false, R.drawable.ic_chevron_left);
+        addBtn(touchOverlay, ">", Gravity.BOTTOM | Gravity.LEFT, dpToPx(167), dpToPx(27), btnSize, KeyEvent.KEYCODE_DPAD_RIGHT, false, R.drawable.ic_chevron_right);
+        addBtn(touchOverlay, "^", Gravity.BOTTOM | Gravity.LEFT, dpToPx(107), dpToPx(87), btnSize, KeyEvent.KEYCODE_DPAD_UP, false, R.drawable.ic_expand_less);
+        addBtn(touchOverlay, "v", Gravity.BOTTOM | Gravity.LEFT, dpToPx(107), dpToPx(27), btnSize, KeyEvent.KEYCODE_DPAD_DOWN, false, R.drawable.ic_expand_more);
 
         // ESC (top-left)
-        addBtn(touchOverlay, "ESC", Gravity.TOP | Gravity.LEFT, 20, 20, btnSize, KeyEvent.KEYCODE_ESCAPE, true, R.drawable.ic_menu);
+        addBtn(touchOverlay, "ESC", Gravity.TOP | Gravity.LEFT, dpToPx(7), dpToPx(7), btnSize, KeyEvent.KEYCODE_ESCAPE, true, R.drawable.ic_menu);
         addEditModeButton(touchOverlay);
         addResetButton(touchOverlay);
         addKeyboardButton(touchOverlay);
 
         // Weapon prev/next (right side, mid-height)
-        addBtn(touchOverlay, "Q", Gravity.TOP | Gravity.RIGHT, 20, 400, btnSize, KeyEvent.KEYCODE_Q, true, R.drawable.ic_chevron_left);
-        addBtn(touchOverlay, "E", Gravity.TOP | Gravity.RIGHT, 20, 220, btnSize, KeyEvent.KEYCODE_E, true, R.drawable.ic_chevron_right);
+        addBtn(touchOverlay, "Q", Gravity.TOP | Gravity.RIGHT, dpToPx(7), dpToPx(133), btnSize, KeyEvent.KEYCODE_Q, true, R.drawable.ic_chevron_left);
+        addBtn(touchOverlay, "E", Gravity.TOP | Gravity.RIGHT, dpToPx(7), dpToPx(73), btnSize, KeyEvent.KEYCODE_E, true, R.drawable.ic_chevron_right);
 
         // Run (bottom-right)
-        addBtn(touchOverlay, "SHIFT", Gravity.BOTTOM | Gravity.RIGHT, 120, 60, btnSize, KeyEvent.KEYCODE_SHIFT_LEFT, true, R.drawable.ic_bolt);
-        addBtnWide(touchOverlay, "SPACE", Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 60, btnSize * 2, btnSize, KeyEvent.KEYCODE_SPACE);
+        addBtn(touchOverlay, "SHIFT", Gravity.BOTTOM | Gravity.RIGHT, dpToPx(40), dpToPx(20), btnSize, KeyEvent.KEYCODE_SHIFT_LEFT, true, R.drawable.ic_bolt);
+        addBtnWide(touchOverlay, "SPACE", Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, dpToPx(20), btnSize * 2, btnSize, KeyEvent.KEYCODE_SPACE);
 
-        addFireButton(touchOverlay, lastPos, Gravity.BOTTOM | Gravity.RIGHT, 380, 200, btnSize + 90);
+        addFireButton(touchOverlay, lastPos, Gravity.BOTTOM | Gravity.RIGHT, dpToPx(127), dpToPx(67), btnSize + dpToPx(30));
         addToggleButton(touchOverlay);
 
         editOverlay = new EditOverlayView(this);
@@ -654,7 +658,7 @@ public class MainActivity extends SDLActivity {
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         addContentView(touchOverlay, flp);
-        addMenuClickGuard();
+        addStrayShotGuard();
     }
 
     private void addBtn(FrameLayout parent, String label, int gravity, int marginRight, int marginVert, int size, final int keyCode, final boolean oval, final int iconRes) {
@@ -718,6 +722,7 @@ public class MainActivity extends SDLActivity {
 
     private native boolean nativeIsInGame();
     private native boolean nativeIsMenuOpen();
+    private native boolean nativeIsIntroPlaying();
     private boolean prevMenuOpen = false;
     private boolean prevInGame = false;
     private boolean everInGame = false;
@@ -788,9 +793,9 @@ public class MainActivity extends SDLActivity {
         toggleBtn.setText("");
         toggleBtn.setAlpha(0.75f);
         toggleBtn.setBackground(makeIconBg(false, Color.argb(210, 255, 255, 255), R.drawable.ic_eye_open, 24));
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(140, 80);
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dpToPx(47), dpToPx(27));
         lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-        lp.topMargin = 10;
+        lp.topMargin = dpToPx(3);
         toggleBtn.setLayoutParams(lp);
         final boolean[] hidden = {false};
         toggleBtn.setOnClickListener(v -> {
@@ -840,14 +845,74 @@ public class MainActivity extends SDLActivity {
                 touchPos[0] = event.getX(idx);
                 touchPos[1] = event.getY(idx);
                 SDLActivity.onNativeMouse(1, 0, touchPos[0], touchPos[1], false);
-                if (!everInGame) {
-                    // Only before the player has ever actually been in gameplay — i.e. the
-                    // one-time intro/story screen (do_title()), which only advances on a real
-                    // key event, not a mouse click. Once gameplay has started at least once,
-                    // never send this again, so it doesn't interfere with the pause/title menu.
+                cb[0] = new Choreographer.FrameCallback() {
+                    @Override public void doFrame(long frameTimeNanos) {
+                        if (!active[0]) return;
+                        boolean nowInGame = false;
+                        try { nowInGame = nativeIsInGame(); } catch (Throwable t) {}
+                        if (nowInGame) {
+                            SDLActivity.onNativeMouse(0, 1, touchPos[0], touchPos[1], false);
+                            active[0] = false;
+                            suppressFireUntil = System.currentTimeMillis() + 400;
+                        } else {
+                            Choreographer.getInstance().postFrameCallback(this);
+                        }
+                    }
+                };
+                Choreographer.getInstance().postFrameCallback(cb[0]);
+                return true;
+            }
+            if (!active[0]) return false;
+            if (action == MotionEvent.ACTION_MOVE) {
+                touchPos[0] = event.getX(idx);
+                touchPos[1] = event.getY(idx);
+                SDLActivity.onNativeMouse(0, 2, touchPos[0], touchPos[1], false);
+                return true;
+            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                if (cb[0] != null) Choreographer.getInstance().removeFrameCallback(cb[0]);
+                if (active[0]) {
+                    SDLActivity.onNativeMouse(0, 1, event.getX(idx), event.getY(idx), false);
+                    active[0] = false;
+                }
+                return true;
+            }
+            return true;
+        });
+        addContentView(guard, new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    }
+
+    /** Consumes touch only while !nativeIsInGame() (title screen, pause menu, save console,
+     *  etc.), forwarding press/move/release manually so we fully control the mouse-button state
+     *  ourselves. A Choreographer callback watches every frame for nativeIsInGame() flipping
+     *  true (gameplay just started/resumed) and force-releases the button right then, even if
+     *  the same finger is still physically down — stopping a held "Start Game"/"Return to Game"
+     *  tap from being read as an already-pressed fire button. Sends a cursor-move event before
+     *  the press so the widget system's hit-testing uses the correct tap position (fixes
+     *  submenu close/X buttons that broke when this only sent the press with no prior move). */
+    private void addStrayShotGuard() {
+        View guard = new View(this);
+        final boolean[] active = {false};
+        final float[] touchPos = {0f, 0f};
+        final Choreographer.FrameCallback[] cb = new Choreographer.FrameCallback[1];
+        guard.setOnTouchListener((v, event) -> {
+            int action = event.getActionMasked();
+            int idx = event.getActionIndex();
+            if (action == MotionEvent.ACTION_DOWN) {
+                boolean inGameNow = true;
+                try { inGameNow = nativeIsInGame(); } catch (Throwable t) {}
+                active[0] = !inGameNow;
+                if (!active[0]) return false;
+                touchPos[0] = event.getX(idx);
+                touchPos[1] = event.getY(idx);
+                boolean introPlaying = false;
+                try { introPlaying = nativeIsIntroPlaying(); } catch (Throwable t) {}
+                if (introPlaying) {
                     SDLActivity.onNativeKeyDown(KeyEvent.KEYCODE_ENTER);
                     SDLActivity.onNativeKeyUp(KeyEvent.KEYCODE_ENTER);
                 }
+                SDLActivity.onNativeMouse(0, 2, touchPos[0], touchPos[1], false);
+                SDLActivity.onNativeMouse(1, 0, touchPos[0], touchPos[1], false);
                 cb[0] = new Choreographer.FrameCallback() {
                     @Override public void doFrame(long frameTimeNanos) {
                         if (!active[0]) return;

@@ -1172,6 +1172,10 @@ void fade_out(int steps)
 
 int text_draw(int y, int x1, int y1, int x2, int y2, char const *buf, JCFont *font, uint8_t *cmap, char color);
 
+static bool intro_playing = false;
+
+static volatile bool s_intro_playing = false;
+
 void do_title()
 {
 	//AR intro screens
@@ -1265,7 +1269,9 @@ void do_title()
 
         // HACK: Disable wheel for now since it'll trigger skipping the intro
         wm->SetIgnoreWheelEvents(true);
+        intro_playing = true;
 
+        s_intro_playing = true;
         while(ev.type!=EV_KEY && ev.type!=EV_MOUSE_BUTTON)
         {
             Timer frame;
@@ -1297,6 +1303,8 @@ void do_title()
 
         // HACK: And reenable them
         wm->SetIgnoreWheelEvents(false);
+        s_intro_playing = false;
+        intro_playing = false;
 
         the_game->reset_keymap();
 
@@ -1449,6 +1457,20 @@ Game::Game(int argc, char **argv)
   wm->SetMouseShape(cache.img(c_normal)->copy(), ivec2(1));
 
   gamma_correct(pal);
+
+  // Drain leftover events from confirming the gamma dialog (any trailing
+  // touch-motion plus the mouse-button-up half of the click used to hit the
+  // OK checkmark), stopping as soon as we've eaten a button/key event, so it
+  // doesn't leak into do_title()'s "press any key/click to skip" loop. This
+  // is bounded (max 8 events) so it can never drain the whole queue and eat
+  // title-screen setup messages the way an unconditional full-drain did.
+  for (int flush_i = 0; flush_i < 8 && wm->IsPending(); flush_i++)
+  {
+    Event flush_ev;
+    wm->get_event(flush_ev);
+    if (flush_ev.type == EV_MOUSE_BUTTON || flush_ev.type == EV_KEY)
+      break;
+  }
 
   if(main_net_cfg == NULL || (main_net_cfg->state != net_configuration::SERVER &&
                  main_net_cfg->state != net_configuration::CLIENT))
@@ -2666,4 +2688,10 @@ extern "C" JNIEXPORT jboolean JNICALL
 Java_org_libsdl_app_MainActivity_nativeIsMenuOpen(JNIEnv *env, jclass clazz)
 {
     return (wm != NULL && wm->m_first != NULL) ? JNI_TRUE : JNI_FALSE;
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_org_libsdl_app_MainActivity_nativeIsIntroPlaying(JNIEnv *env, jclass clazz)
+{
+    return s_intro_playing ? JNI_TRUE : JNI_FALSE;
 }
