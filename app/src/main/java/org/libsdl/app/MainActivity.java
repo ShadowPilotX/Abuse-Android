@@ -545,6 +545,11 @@ public class MainActivity extends SDLActivity {
     private long suppressFireUntil = 0;
     private void addTouchControls() {
         touchOverlay = new FrameLayout(this);
+        // Hidden from the very first frame — otherwise it defaults to VISIBLE and stays that
+        // way until the first poll tick (up to 500ms later) gets a chance to check
+        // nativeIsInGame() and hide it, causing a brief flash of controls over the CDC logo /
+        // loading screen right at app launch, before any gameplay (or even the intro) has begun.
+        touchOverlay.setVisibility(View.GONE);
         final float[] lastPos = {160f, 100f};
         android.view.View aimView = new android.view.View(this);
         final int[] aimPointerId = {-1};
@@ -728,6 +733,7 @@ public class MainActivity extends SDLActivity {
     private boolean everInGame = false;
     private void startTouchControlPolling() {
         final Handler handler = new Handler();
+        final int[] notInGameStreak = {0};
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -736,7 +742,21 @@ public class MainActivity extends SDLActivity {
                     boolean menuOpen = nativeIsMenuOpen();
                     if (inGame) everInGame = true;
                     if (touchOverlay != null) {
-                        touchOverlay.setVisibility(inGame ? android.view.View.VISIBLE : android.view.View.GONE);
+                        if (inGame) {
+                            notInGameStreak[0] = 0;
+                            touchOverlay.setVisibility(android.view.View.VISIBLE);
+                        } else {
+                            notInGameStreak[0]++;
+                            // Require a few consecutive "not in game" polls (~300ms) before
+                            // actually hiding the controls. A single transient false reading
+                            // (e.g. a brief internal engine state flicker mid-gameplay) was
+                            // making every button flash off-screen for under a second; real
+                            // transitions to title/pause/save screens persist far longer than
+                            // that, so they're unaffected.
+                            if (notInGameStreak[0] >= 3) {
+                                touchOverlay.setVisibility(android.view.View.GONE);
+                            }
+                        }
                     }
                     if ((prevMenuOpen && !menuOpen) || (!prevInGame && inGame)) {
                         suppressFireUntil = System.currentTimeMillis() + 400;
@@ -792,14 +812,17 @@ public class MainActivity extends SDLActivity {
         final Button toggleBtn = new Button(this);
         toggleBtn.setText("");
         toggleBtn.setAlpha(0.75f);
-        toggleBtn.setBackground(makeIconBg(false, Color.argb(210, 255, 255, 255), R.drawable.ic_eye_open, 24));
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dpToPx(47), dpToPx(27));
         lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
         lp.topMargin = dpToPx(3);
         toggleBtn.setLayoutParams(lp);
-        final boolean[] hidden = {false};
-        toggleBtn.setOnClickListener(v -> {
-            hidden[0] = !hidden[0];
+        parent.addView(toggleBtn);
+
+        // Persisted across app restarts: if the player hid the controls (e.g. playing with a
+        // keyboard/gamepad), resuming a saved game later keeps them hidden instead of resetting
+        // to shown every launch.
+        final boolean[] hidden = {layoutPrefs.getBoolean("controls_hidden", false)};
+        Runnable applyHiddenState = () -> {
             int childCount = parent.getChildCount();
             for (int i = 0; i < childCount; i++) {
                 android.view.View child = parent.getChildAt(i);
@@ -816,8 +839,14 @@ public class MainActivity extends SDLActivity {
             }
             toggleBtn.setBackground(makeIconBg(false, Color.argb(210, 255, 255, 255),
                 hidden[0] ? R.drawable.ic_eye_closed : R.drawable.ic_eye_open, 24));
+        };
+        applyHiddenState.run(); // apply the persisted state immediately at startup
+
+        toggleBtn.setOnClickListener(v -> {
+            hidden[0] = !hidden[0];
+            layoutPrefs.edit().putBoolean("controls_hidden", hidden[0]).apply();
+            applyHiddenState.run();
         });
-        parent.addView(toggleBtn);
     }
 
     /** Full-screen invisible catcher, always present (independent of touchOverlay's own visibility),
