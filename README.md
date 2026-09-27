@@ -25,7 +25,14 @@ To better reflect modern game controls, the original arrow key controls have bee
 
 Fire/aim: Tap to shoot, or hold and drag to aim. The reticle aiming speed directly tracks your finger movement speed.
 
-**Gamepad:** D-pad/stick to move, buttons to jump/shoot (standard SDL controller mapping).
+**Gamepad:**
+
+- D-pad / Left Stick — Movement
+- Right Stick — Aiming
+- Face Buttons — Gameplay actions
+- Shoulder Buttons / Triggers — Additional controls
+- Start — Confirm / Enter
+- Back — Escape / Back
 
 ## Cheats
 
