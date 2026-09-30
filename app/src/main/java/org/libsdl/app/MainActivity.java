@@ -487,7 +487,6 @@ public class MainActivity extends SDLActivity {
         editModeBtn.setLayoutParams(lp);
         editModeBtn.setOnClickListener(v -> {
             setEditMode(!editMode);
-            editModeBtn.setText(editMode ? "DONE" : "EDIT");
             editModeBtn.setBackground(makeIconBg(false,
                 editMode ? Color.argb(230, 60, 200, 60) : Color.argb(210, 255, 255, 255),
                 editMode ? R.drawable.ic_check : R.drawable.ic_edit, 24));
@@ -727,6 +726,7 @@ public class MainActivity extends SDLActivity {
 
     private native boolean nativeIsInGame();
     private native boolean nativeIsMenuOpen();
+    private native boolean nativeIsSaveConsoleOpen();
     private native boolean nativeIsIntroPlaying();
     private boolean prevMenuOpen = false;
     private boolean prevInGame = false;
@@ -740,11 +740,13 @@ public class MainActivity extends SDLActivity {
                 try {
                     boolean inGame = nativeIsInGame();
                     boolean menuOpen = nativeIsMenuOpen();
+                    boolean saveOpen = false;
+                    try { saveOpen = nativeIsSaveConsoleOpen(); } catch (Throwable t2) {}
                     if (inGame) everInGame = true;
                     if (touchOverlay != null) {
                         if (inGame) {
                             notInGameStreak[0] = 0;
-                            touchOverlay.setVisibility(android.view.View.VISIBLE);
+                            touchOverlay.setVisibility(saveOpen ? android.view.View.GONE : android.view.View.VISIBLE);
                         } else {
                             notInGameStreak[0]++;
                             // Require a few consecutive "not in game" polls (~300ms) before

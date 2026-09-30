@@ -46,6 +46,10 @@ extern std::string get_ctr_binding(std::string c);
 
 extern int mouse_xpad, mouse_ypad, mouse_xscale, mouse_yscale;
 short mouse_buttons[5] = { 0, 0, 0, 0, 0 };
+// stray-shot guard after leaving save console
+static int prev_ar_state = -1;
+static bool fire_suppress = false;
+static Uint32 fire_guard_deadline = 0;
 // From setup.cpp:
 void toggle_fullscreen(void);
 void handle_window_resize(void);
@@ -172,6 +176,20 @@ void EventHandler::SysEvent(Event &ev)
         ev.mouse_button &= (0xff - RIGHT_BUTTON);
     }
 
+    {
+        int cur_ar_state = the_game->ar_state;
+        if ((prev_ar_state == AR_LOADSAVE || prev_ar_state == AR_MAINMENU) && cur_ar_state != prev_ar_state)
+            fire_guard_deadline = SDL_GetTicks() + 250;
+        prev_ar_state = cur_ar_state;
+
+        bool left_down = (buttons & SDL_BUTTON(1)) != 0;
+        if (!left_down)
+            fire_suppress = false;
+        else if (!fire_suppress && SDL_GetTicks() < fire_guard_deadline)
+            fire_suppress = true;
+        if (fire_suppress)
+            ev.mouse_button &= (0xff - LEFT_BUTTON);
+    }
     m_pos = ivec2(ev.mouse_move.x, ev.mouse_move.y);
     m_button = ev.mouse_button;
 

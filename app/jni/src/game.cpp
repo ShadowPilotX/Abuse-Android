@@ -2695,3 +2695,9 @@ Java_org_libsdl_app_MainActivity_nativeIsIntroPlaying(JNIEnv *env, jclass clazz)
 {
     return s_intro_playing ? JNI_TRUE : JNI_FALSE;
 }
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_org_libsdl_app_MainActivity_nativeIsSaveConsoleOpen(JNIEnv *env, jclass clazz)
+{
+    return (the_game != NULL && the_game->ar_state == AR_LOADSAVE) ? JNI_TRUE : JNI_FALSE;
+}

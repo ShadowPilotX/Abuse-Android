@@ -682,6 +682,7 @@ void main_menu()
 {
   // AR enabled button selection with a controller, enabled highres button images
   // AR let me know we are stuck here
+  int ar_state_entry = the_game->ar_state;
   the_game->ar_stateold = the_game->ar_state;
   the_game->ar_state = AR_MAINMENU;
 
@@ -846,7 +847,7 @@ void main_menu()
         the_game->end_session();
 
 	//AR let me know we leaving
-	the_game->ar_state = the_game->ar_stateold;
+	the_game->ar_state = ar_state_entry;
 	if(settings.ctr_aim) wm->SetMousePos(ivec2(old_mx,old_my));//put mouse where it was on entering
 	//
 }
