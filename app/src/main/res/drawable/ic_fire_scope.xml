@@ -1,0 +1,51 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp" android:height="100dp" android:viewportWidth="100" android:viewportHeight="100">
+
+    <!-- outer red ring -->
+    <path android:fillColor="#00000000" android:strokeColor="#D64A3C" android:strokeWidth="3"
+        android:pathData="M94,50 A44,44 0 1,0 6,50 A44,44 0 1,0 94,50 Z"/>
+
+    <!-- inner thin ring -->
+    <path android:fillColor="#00000000" android:strokeColor="#F2F1EA" android:strokeWidth="0.75"
+        android:pathData="M89,50 A39,39 0 1,0 11,50 A39,39 0 1,0 89,50 Z"/>
+
+    <!-- thick cardinal bars -->
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="3" android:strokeLineCap="square"
+        android:pathData="M50,1L50,19"/>
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="3" android:strokeLineCap="square"
+        android:pathData="M50,81L50,99"/>
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="3" android:strokeLineCap="square"
+        android:pathData="M1,50L19,50"/>
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="3" android:strokeLineCap="square"
+        android:pathData="M81,50L99,50"/>
+
+    <!-- thin connector lines from bars toward center -->
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="0.75"
+        android:pathData="M50,19L50,38"/>
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="0.75"
+        android:pathData="M50,62L50,81"/>
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="0.75"
+        android:pathData="M19,50L38,50"/>
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="0.75"
+        android:pathData="M62,50L81,50"/>
+
+    <!-- small tick marks -->
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="1.25" android:pathData="M50,21L50,25"/>
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="1.25" android:pathData="M50,27L50,30"/>
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="1.25" android:pathData="M50,70L50,73"/>
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="1.25" android:pathData="M50,75L50,79"/>
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="1.25" android:pathData="M21,50L25,50"/>
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="1.25" android:pathData="M27,50L30,50"/>
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="1.25" android:pathData="M70,50L73,50"/>
+    <path android:strokeColor="#F2F1EA" android:strokeWidth="1.25" android:pathData="M75,50L79,50"/>
+
+    <!-- center ring -->
+    <path android:fillColor="#00000000" android:strokeColor="#F2F1EA" android:strokeWidth="0.75"
+        android:pathData="M58,50 A8,8 0 1,0 42,50 A8,8 0 1,0 58,50 Z"/>
+
+    <!-- center red cross -->
+    <path android:strokeColor="#D64A3C" android:strokeWidth="1.5" android:strokeLineCap="round"
+        android:pathData="M46,50L54,50"/>
+    <path android:strokeColor="#D64A3C" android:strokeWidth="1.5" android:strokeLineCap="round"
+        android:pathData="M50,46L50,54"/>
+</vector>

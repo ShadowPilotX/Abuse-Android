@@ -2684,6 +2684,27 @@ Java_org_libsdl_app_MainActivity_nativeIsInGame(JNIEnv *env, jclass clazz)
     return settings.in_game ? JNI_TRUE : JNI_FALSE;
 }
 
+extern int mouse_xpad, mouse_ypad, mouse_xscale, mouse_yscale;
+
+// Player position in window pixels ({-1,-1} when unavailable). Used by the Casual aim stick.
+extern "C" JNIEXPORT jintArray JNICALL
+Java_org_libsdl_app_MainActivity_nativeGetPlayerScreenPos(JNIEnv *env, jclass clazz)
+{
+    jint out[2] = { -1, -1 };
+    if (settings.in_game && the_game && the_game->first_view
+        && the_game->first_view->m_focus && !(dev & MAP_MODE))
+    {
+        view *v = the_game->first_view;
+        ivec2 sp = the_game->GameToMouse(ivec2(v->m_focus->x, v->m_focus->y), v);
+        sp.y -= 16; // x,y is the feet; aim from about chest height (tune later)
+        out[0] = ((sp.x * mouse_xscale + 0x8000) >> 16) + mouse_xpad;
+        out[1] = ((sp.y * mouse_yscale + 0x8000) >> 16) + mouse_ypad;
+    }
+    jintArray arr = env->NewIntArray(2);
+    env->SetIntArrayRegion(arr, 0, 2, out);
+    return arr;
+}
+
 extern "C" JNIEXPORT jboolean JNICALL
 Java_org_libsdl_app_MainActivity_nativeIsMenuOpen(JNIEnv *env, jclass clazz)
 {
