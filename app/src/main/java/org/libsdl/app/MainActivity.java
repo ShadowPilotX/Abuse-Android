@@ -262,6 +262,7 @@ public class MainActivity extends SDLActivity {
         }
         if (casualHud != null) casualHud.invalidate();
         syncZoneHandles();
+        applyControlsHidden();
     }
 
     private void resetAllLayouts() {
@@ -401,7 +402,7 @@ public class MainActivity extends SDLActivity {
                 if (isInside(editModeBtn, x, y) || isInside(resetBtn, x, y)
                     || (schemeBar != null && schemeBar.getVisibility() == View.VISIBLE
                         && isInside(schemeBar, x, y))
-                    || isInside(zoneHandleA, x, y) || isInside(zoneHandleM, x, y)) {
+                    || isInside(zoneHandleA, x, y) || isInside(zoneHandleM, x, y) || isInside(cancelBtn, x, y)) {
                     return false;
                 }
                 active = findControlAt(x, y);
@@ -513,6 +514,8 @@ public class MainActivity extends SDLActivity {
         }
         if (resetBtn != null) {
             resetBtn.setVisibility(on ? View.VISIBLE : View.GONE);
+            if (cancelBtn != null) cancelBtn.setVisibility(on ? View.VISIBLE : View.GONE);
+            applyGlobalOpacity();
             if (!on) schemeMin = false;
             applyZoneStyle();
             if (schemeBar != null) schemeBar.setVisibility(on ? View.VISIBLE : View.GONE);
@@ -526,23 +529,28 @@ public class MainActivity extends SDLActivity {
         editModeBtn = new Button(this);
         editModeBtn.setText("");
         editModeBtn.setAlpha(0.75f);
-        editModeBtn.setBackground(makeIconBg(false, Color.argb(210, 255, 255, 255), R.drawable.ic_edit, 24));
+        editModeBtn.setBackground(makeIconBg(false, Color.argb(210, 255, 255, 255), R.drawable.ic_gear, 24));
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dpToPx(47), dpToPx(27));
         lp.gravity = Gravity.TOP | Gravity.LEFT;
         lp.leftMargin = dpToPx(70); // beside ESC
         lp.topMargin = dpToPx(7);
         editModeBtn.setLayoutParams(lp);
         editModeBtn.setOnClickListener(v -> {
-            setEditMode(!editMode);
+            if (!editMode) { showTouchSettings(); return; }
+            setEditMode(false);
+            layoutSnapshot = null;
+            new Handler().post(() -> showTouchSettings());
             editModeBtn.setBackground(makeIconBg(false,
                 editMode ? Color.argb(230, 60, 200, 60) : Color.argb(210, 255, 255, 255),
-                editMode ? R.drawable.ic_check : R.drawable.ic_edit, 24));
+                editMode ? R.drawable.ic_check : R.drawable.ic_gear, 24));
         });
         parent.addView(editModeBtn);
     }
 
     private void addResetButton(final FrameLayout parent) {
-        resetBtn = new Button(this);
+        resetBtn = new Button(this) {
+            @Override public void setVisibility(int v) { super.setVisibility(View.GONE); }
+        };
         resetBtn.setText("");
         resetBtn.setAlpha(0.75f);
         resetBtn.setBackground(makeIconBg(false, Color.argb(220, 220, 60, 50), R.drawable.ic_refresh, 24));
@@ -595,6 +603,7 @@ public class MainActivity extends SDLActivity {
     private FrameLayout touchOverlay;
     private long suppressFireUntil = 0;
     private void addTouchControls() {
+        loadAnalogTuning();
         touchOverlay = new FrameLayout(this);
         // Hidden from the very first frame — otherwise it defaults to VISIBLE and stays that
         // way until the first poll tick (up to 500ms later) gets a chance to check
@@ -715,6 +724,8 @@ public class MainActivity extends SDLActivity {
         addFireButton(touchOverlay, lastPos, Gravity.BOTTOM | Gravity.RIGHT, dpToPx(127), dpToPx(67), btnSize + dpToPx(30));
         addAimPad(touchOverlay, lastPos);
         addToggleButton(touchOverlay);
+        swapEditAndHide();
+        addCancelButton(touchOverlay);
 
         addZoneHandles(touchOverlay);
         editOverlay = new EditOverlayView(this);
@@ -800,10 +811,10 @@ public class MainActivity extends SDLActivity {
     private static final String SCHEME_CASUAL = "casual";
     private static final String SCHEME_DPAD = "dpad";
     private static final String SCHEME_CUSTOM = "custom";
-    private static final int CASUAL_RADIUS_DP = 56;      // stick travel
+    private static int CASUAL_RADIUS_DP = 56;      // stick travel
     private static final int CASUAL_CURSOR_DP = 140;     // cursor distance from player
-    private static final float CASUAL_DEADZONE = 0.15f;  // below: keep last angle
-    private static final float CASUAL_FIRE_ZONE = 0.80f; // at/above: fire
+    private static float CASUAL_DEADZONE = 0.15f;  // below: keep last angle
+    private static float CASUAL_FIRE_ZONE = 0.80f; // at/above: fire
     private android.widget.LinearLayout schemeBar;
     private android.widget.TextView schemeInfo;
     private Button schemeMinBtn;
@@ -1052,6 +1063,9 @@ private float casualPadRadius(Button b) {
         }
         applyPadStyle();
         syncZoneHandles();
+        for (android.view.View tv : settingsThumbs) tv.invalidate();
+        if (analogRefresh != null) analogRefresh.run();
+        applyControlsHidden();
         if (casualHud != null) casualHud.invalidate();
     }
 
@@ -1239,6 +1253,392 @@ private float casualPadRadius(Button b) {
         return wrap;
     }
 
+    private final java.util.ArrayList<android.view.View> settingsThumbs = new java.util.ArrayList<>();
+    private Runnable analogRefresh;
+
+    private void loadAnalogTuning() {
+        android.content.SharedPreferences ap = getSharedPreferences("analog_tuning", MODE_PRIVATE);
+        CASUAL_DEADZONE = ap.getInt("a_dz", 15) / 100f;
+        CASUAL_FIRE_ZONE = ap.getInt("a_fz", 80) / 100f;
+        CASUAL_RADIUS_DP = ap.getInt("a_size", 56);
+    }
+
+    private android.view.View tsSlider(String label, final String unit, final int min, final int max, final String key, final int def) {
+        final android.content.SharedPreferences ap = getSharedPreferences("analog_tuning", MODE_PRIVATE);
+        android.widget.LinearLayout box = new android.widget.LinearLayout(this);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        box.setPadding(0, dpToPx(8), 0, 0);
+        android.widget.LinearLayout head = new android.widget.LinearLayout(this);
+        head.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        android.widget.TextView name = new android.widget.TextView(this);
+        name.setText(label);
+        name.setTextColor(Color.WHITE);
+        name.setTextSize(15);
+        head.addView(name, new android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        final android.widget.TextView val = new android.widget.TextView(this);
+        val.setTextColor(Color.WHITE);
+        val.setTextSize(15);
+        val.setTypeface(null, android.graphics.Typeface.BOLD);
+        head.addView(val);
+        box.addView(head);
+        final android.widget.SeekBar sb = new android.widget.SeekBar(this);
+        sb.setMax(max - min);
+        int cur = ap.getInt(key, def);
+        sb.setProgress(cur - min);
+        val.setText(cur + unit);
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            sb.setProgressTintList(android.content.res.ColorStateList.valueOf(Color.argb(255, 60, 200, 60)));
+            sb.setThumbTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));
+            sb.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.argb(90, 255, 255, 255)));
+        }
+        sb.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(android.widget.SeekBar b, int p, boolean user) {
+                int v = p + min;
+                val.setText(v + unit);
+                ap.edit().putInt(key, v).apply();
+                loadAnalogTuning();
+                if (casualHud != null) casualHud.invalidate();
+            }
+            @Override public void onStartTrackingTouch(android.widget.SeekBar b) {}
+            @Override public void onStopTrackingTouch(android.widget.SeekBar b) {}
+        });
+        box.addView(sb);
+        return box;
+    }
+
+    private void buildAnalogBox(final android.widget.LinearLayout box) {
+        box.removeAllViews();
+        String sc = currentScheme();
+        boolean custom = SCHEME_CUSTOM.equals(sc);
+        boolean showAim = SCHEME_CASUAL.equals(sc) || SCHEME_DPAD.equals(sc) || (custom && !"off".equals(cAim()));
+        boolean showSize = custom && ("floating".equals(cAim()) || "floating".equals(cMove()));
+        if (!showAim && !showSize) return;
+        box.addView(tsSection("Analog"));
+        if (showAim) {
+            box.addView(tsSlider("Deadzone", "%", 5, 40, "a_dz", 15));
+            box.addView(tsSlider("Fire ring", "%", 50, 95, "a_fz", 80));
+        }
+        if (showSize) box.addView(tsSlider("Floating pad size", "dp", 40, 90, "a_size", 56));
+        android.widget.TextView def = tsButton("Default values", Color.argb(30, 255, 255, 255), Color.argb(120, 255, 255, 255));
+        def.setOnClickListener(v -> {
+            getSharedPreferences("analog_tuning", MODE_PRIVATE).edit().clear().apply();
+            loadAnalogTuning();
+            buildAnalogBox(box);
+            if (casualHud != null) casualHud.invalidate();
+        });
+        android.widget.LinearLayout.LayoutParams dl = new android.widget.LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        dl.topMargin = dpToPx(14);
+        box.addView(def, dl);
+    }
+
+    private Button cancelBtn;
+    private java.util.HashMap<String, java.util.HashMap<String, Object>> layoutSnapshot;
+    private final String[] SNAP_FILES = {"touch_layout", "touch_layout_casual", "touch_layout_dpad", "touch_layout_custom", "control_scheme"};
+
+    private void snapshotLayouts() {
+        layoutSnapshot = new java.util.HashMap<>();
+        for (String f : SNAP_FILES) {
+            layoutSnapshot.put(f, new java.util.HashMap<String, Object>(getSharedPreferences(f, MODE_PRIVATE).getAll()));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void restoreLayouts() {
+        if (layoutSnapshot == null) return;
+        for (java.util.Map.Entry<String, java.util.HashMap<String, Object>> fe : layoutSnapshot.entrySet()) {
+            SharedPreferences.Editor ed = getSharedPreferences(fe.getKey(), MODE_PRIVATE).edit();
+            ed.clear();
+            for (java.util.Map.Entry<String, Object> en : fe.getValue().entrySet()) {
+                Object v = en.getValue();
+                String k = en.getKey();
+                if (v instanceof Boolean) ed.putBoolean(k, (Boolean) v);
+                else if (v instanceof Integer) ed.putInt(k, (Integer) v);
+                else if (v instanceof Float) ed.putFloat(k, (Float) v);
+                else if (v instanceof Long) ed.putLong(k, (Long) v);
+                else if (v instanceof String) ed.putString(k, (String) v);
+                else if (v instanceof java.util.Set) ed.putStringSet(k, (java.util.Set<String>) v);
+            }
+            ed.commit();
+        }
+        layoutSnapshot = null;
+        layoutPrefs = getSharedPreferences(layoutFileFor(currentScheme()), MODE_PRIVATE);
+        reapplyLayouts();
+        refreshSchemeButtons();
+        refreshControlVisibility();
+    }
+
+    private void cancelEditSession() {
+        restoreLayouts();
+        setEditMode(false);
+        editModeBtn.setBackground(makeIconBg(false, Color.argb(210, 255, 255, 255), R.drawable.ic_gear, 24));
+        new Handler().post(() -> showTouchSettings());
+    }
+
+    private void addCancelButton(FrameLayout parent) {
+        cancelBtn = new Button(this) {
+            @Override public void setVisibility(int v) {
+                super.setVisibility((v == View.VISIBLE && !editMode) ? View.GONE : v);
+            }
+        };
+        cancelBtn.setText("");
+        cancelBtn.setAlpha(0.9f);
+        cancelBtn.setBackground(makeIconBg(false, Color.argb(230, 220, 60, 50), R.drawable.ic_cancel_x, 24));
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dpToPx(47), dpToPx(27));
+        lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        lp.topMargin = dpToPx(3);
+        lp.leftMargin = dpToPx(56);
+        cancelBtn.setLayoutParams(lp);
+        cancelBtn.setVisibility(View.GONE);
+        cancelBtn.setOnClickListener(v -> cancelEditSession());
+        parent.addView(cancelBtn);
+    }
+
+    private void swapEditAndHide() {
+        if (editModeBtn == null) return;
+        FrameLayout.LayoutParams el = (FrameLayout.LayoutParams) editModeBtn.getLayoutParams();
+        el.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        el.leftMargin = 0;
+        el.rightMargin = 0;
+        el.bottomMargin = 0;
+        el.topMargin = dpToPx(3);
+        editModeBtn.setLayoutParams(el);
+    }
+
+    private class PresetThumb extends android.view.View {
+        private final String sc;
+        private final android.graphics.Paint p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        PresetThumb(android.content.Context c, String sc) { super(c); this.sc = sc; settingsThumbs.add(this); }
+        @Override protected void onMeasure(int wms, int hms) {
+            int w = MeasureSpec.getSize(wms);
+            setMeasuredDimension(w, (int) (w * 56f / 120f));
+        }
+        @Override protected void onDraw(android.graphics.Canvas cv) {
+            final android.graphics.Paint.Style FILL = android.graphics.Paint.Style.FILL, STROKE = android.graphics.Paint.Style.STROKE;
+            float u = getWidth() / 120f;
+            boolean dpad = false, fire = false, aim = false, move = false, q = true, e = true, shift = true, space = true;
+            if (SCHEME_CLASSIC.equals(sc)) { dpad = true; fire = true; }
+            else if (SCHEME_CASUAL.equals(sc)) { move = true; aim = true; }
+            else if (SCHEME_DPAD.equals(sc)) { dpad = true; aim = true; }
+            else {
+                dpad = cOn("DPAD"); fire = cOn("FIRE"); aim = !"off".equals(cAim()); move = !"off".equals(cMove());
+                q = cOn("Q"); e = cOn("E"); shift = cOn("SHIFT"); space = cOn("SPACE");
+            }
+            p.setStyle(FILL);
+            p.setColor(Color.argb(255, 5, 8, 12));
+            cv.drawRoundRect(0, 0, getWidth(), getHeight(), 6 * u, 6 * u, p);
+            p.setStyle(STROKE);
+            p.setStrokeWidth(Math.max(1f, 1.4f * u));
+            int g = Color.argb(255, 154, 164, 178), r = Color.argb(255, 220, 60, 50);
+            p.setColor(g);
+            if (dpad) {
+                float[][] d = {{8, 30}, {18, 30}, {28, 30}, {18, 20}};
+                for (float[] t : d) cv.drawRoundRect(t[0] * u, t[1] * u, (t[0] + 8) * u, (t[1] + 8) * u, 2 * u, 2 * u, p);
+            }
+            if (move) {
+                cv.drawCircle(24 * u, 36 * u, 12 * u, p);
+                p.setStyle(FILL); cv.drawCircle(24 * u, 36 * u, 4 * u, p); p.setStyle(STROKE);
+            }
+            if (shift) cv.drawCircle(110 * u, 46 * u, 5 * u, p);
+            if (space) cv.drawRoundRect(46 * u, 44 * u, 74 * u, 52 * u, 2 * u, 2 * u, p);
+            if (q) cv.drawCircle(112 * u, 12 * u, 4 * u, p);
+            if (e) cv.drawCircle(112 * u, 24 * u, 4 * u, p);
+            if (aim) {
+                float ax = fire ? 76 : 90;
+                cv.drawCircle(ax * u, 34 * u, 11 * u, p);
+                p.setColor(r); cv.drawCircle(ax * u, 34 * u, 8.8f * u, p); p.setColor(g);
+            }
+            if (fire) { p.setColor(r); cv.drawCircle((aim ? 100 : 94) * u, 32 * u, 8 * u, p); }
+        }
+    }
+
+    private android.widget.TextView tsSection(String t) {
+        android.widget.TextView v = new android.widget.TextView(this);
+        v.setText(t.toUpperCase());
+        v.setTextColor(Color.argb(255, 143, 160, 179));
+        v.setTextSize(12);
+        v.setLetterSpacing(0.06f);
+        v.setPadding(0, dpToPx(18), 0, dpToPx(6));
+        return v;
+    }
+
+    private android.widget.TextView tsButton(String t, int fill, int stroke) {
+        android.widget.TextView b = new android.widget.TextView(this);
+        b.setText(t);
+        b.setTextColor(Color.WHITE);
+        b.setTextSize(15);
+        b.setGravity(Gravity.CENTER);
+        b.setPadding(dpToPx(10), dpToPx(12), dpToPx(10), dpToPx(12));
+        GradientDrawable d = new GradientDrawable();
+        d.setCornerRadius(dpToPx(12));
+        d.setColor(fill);
+        d.setStroke(dpToPx(1), stroke);
+        b.setBackground(d);
+        return b;
+    }
+
+    private void showTouchSettings() {
+        int sw = getResources().getDisplayMetrics().widthPixels, sh = getResources().getDisplayMetrics().heightPixels;
+        android.widget.LinearLayout panel = new android.widget.LinearLayout(this);
+        panel.setOrientation(android.widget.LinearLayout.VERTICAL);
+        GradientDrawable pbg = new GradientDrawable();
+        pbg.setCornerRadius(dpToPx(14));
+        pbg.setColor(Color.argb(245, 12, 20, 30));
+        pbg.setStroke(dpToPx(2), Color.argb(200, 70, 200, 230));
+        panel.setBackground(pbg);
+        FrameLayout header = new FrameLayout(this);
+        android.widget.TextView title = new android.widget.TextView(this);
+        title.setText("Touch settings");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(20);
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
+        title.setGravity(Gravity.CENTER);
+        header.addView(title, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+        android.widget.TextView close = new android.widget.TextView(this);
+        close.setText("\u2715");
+        close.setTextColor(Color.WHITE);
+        close.setTextSize(22);
+        close.setGravity(Gravity.CENTER);
+        close.setPadding(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10));
+        header.addView(close, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+        header.setPadding(0, dpToPx(8), 0, dpToPx(4));
+        panel.addView(header);
+        final android.widget.LinearLayout content = new android.widget.LinearLayout(this);
+        content.setOrientation(android.widget.LinearLayout.VERTICAL);
+        content.setPadding(dpToPx(16), 0, dpToPx(16), dpToPx(16));
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this);
+        scroll.addView(content);
+        panel.addView(scroll, new android.widget.LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (sh * 0.88f) - dpToPx(60)));
+        final android.app.Dialog dlg = new android.app.Dialog(this);
+        dlg.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        dlg.setContentView(panel);
+        if (dlg.getWindow() != null) {
+            dlg.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+            dlg.getWindow().getDecorView().setPadding(0, 0, 0, 0);
+        }
+        dlg.setOnDismissListener(d -> { settingsThumbs.clear(); analogRefresh = null; });
+        close.setOnClickListener(v -> dlg.dismiss());
+        fillTouchSettings(content, dlg);
+        dlg.show();
+        if (dlg.getWindow() != null) {
+            dlg.getWindow().setLayout((int) (sw * 0.72f), ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
+    private void fillTouchSettings(final android.widget.LinearLayout content, final android.app.Dialog dlg) {
+        content.removeAllViews();
+        settingsThumbs.clear();
+        final String cur = currentScheme();
+        content.addView(tsSliderG("On-screen controls opacity", "%", 0, 100, "touch_global", "opacity", 50,
+            () -> { loadGlobalPrefs(); setAllButtonOpacity(globalOpacity); }));
+        content.addView(tsSection("Hide/show on-screen controls"));
+        content.addView(tsHideRow());
+        content.addView(tsSection("Preset"));
+        android.widget.LinearLayout tiles = new android.widget.LinearLayout(this);
+        tiles.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        final String[] keys = {SCHEME_CLASSIC, SCHEME_CASUAL, SCHEME_DPAD, SCHEME_CUSTOM};
+        final String[] names = {"Preset 1", "Preset 2", "Preset 3", "Custom"};
+        for (int i = 0; i < 4; i++) {
+            final String k = keys[i];
+            boolean sel = k.equals(cur);
+            android.widget.LinearLayout tile = new android.widget.LinearLayout(this);
+            tile.setOrientation(android.widget.LinearLayout.VERTICAL);
+            tile.setPadding(dpToPx(6), dpToPx(6), dpToPx(6), dpToPx(8));
+            GradientDrawable tb = new GradientDrawable();
+            tb.setCornerRadius(dpToPx(12));
+            tb.setColor(sel ? Color.argb(60, 60, 200, 60) : Color.argb(30, 255, 255, 255));
+            tb.setStroke(dpToPx(2), sel ? Color.argb(255, 60, 200, 60) : Color.argb(60, 255, 255, 255));
+            tile.setBackground(tb);
+            tile.addView(new PresetThumb(this, k), new android.widget.LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            android.widget.TextView lb = new android.widget.TextView(this);
+            lb.setText(names[i]);
+            lb.setTextColor(Color.WHITE);
+            lb.setTextSize(13);
+            lb.setGravity(Gravity.CENTER);
+            lb.setPadding(0, dpToPx(4), 0, 0);
+            tile.addView(lb);
+            tile.setOnClickListener(v -> {
+                if (!k.equals(currentScheme())) setControlScheme(k);
+                fillTouchSettings(content, dlg);
+            });
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            lp.rightMargin = dpToPx(i < 3 ? 8 : 0);
+            tiles.addView(tile, lp);
+        }
+        content.addView(tiles);
+
+        CharSequence infoText;
+        if (SCHEME_CUSTOM.equals(cur)) {
+            String t = "Custom", b = "Enable or disable controls below.\nControls that are off disappear completely.";
+            android.text.SpannableString sp = new android.text.SpannableString(t + "\n" + b);
+            sp.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, t.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            infoText = sp;
+        } else {
+            infoText = presetInfo(cur);
+        }
+        android.widget.TextView info = new android.widget.TextView(this);
+        info.setText(infoText);
+        info.setTextColor(Color.WHITE);
+        info.setTextSize(14);
+        info.setPadding(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10));
+        GradientDrawable ib = new GradientDrawable();
+        ib.setCornerRadius(dpToPx(12));
+        ib.setColor(Color.argb(30, 255, 255, 255));
+        info.setBackground(ib);
+        android.widget.LinearLayout.LayoutParams ilp = new android.widget.LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        ilp.topMargin = dpToPx(10);
+        content.addView(info, ilp);
+
+        if (SCHEME_CUSTOM.equals(cur)) {
+            content.addView(tsSection("Custom controls"));
+            final int W = Color.argb(210, 255, 255, 255);
+            content.addView(customRowView("DPAD", "D-pad", 44, 44, makeIconBg(false, W, R.drawable.ic_expand_less, 26), null));
+            content.addView(customRowView("FIRE", "FIRE circle", 48, 48, makeIconBg(true, Color.argb(220, 220, 60, 50), R.drawable.ic_target, 30), null));
+            content.addView(customRowView("AIMA", "Analog aim", 48, 48, makeIconBg(true, W, R.drawable.ic_target, 26), "c_aim"));
+            content.addView(customRowView("MOVEA", "Analog move", 48, 48, makeControlBg(true, W), "c_move"));
+            content.addView(customRowView("Q", "Prev", 44, 44, makeIconBg(true, W, R.drawable.ic_chevron_left, 26), null));
+            content.addView(customRowView("E", "Next", 44, 44, makeIconBg(true, W, R.drawable.ic_chevron_right, 26), null));
+            content.addView(customRowView("SHIFT", "Special", 44, 44, makeIconBg(true, W, R.drawable.ic_bolt, 26), null));
+            content.addView(customRowView("SPACE", "SPACE", 48, 26, makeControlBg(false, W), null));
+            content.addView(customRowView("ESC", "ESC", 44, 44, makeIconBg(true, W, R.drawable.ic_menu, 26), null));
+            content.addView(customRowView("KEYS", "KEYS", 48, 30, makeIconBg(false, W, R.drawable.ic_keyboard, 24), null));
+        }
+
+        content.addView(tsSection("Layout"));
+        android.widget.LinearLayout btns = new android.widget.LinearLayout(this);
+        btns.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        android.widget.TextView edit = tsButton("Edit layout", Color.argb(255, 42, 140, 255), Color.argb(255, 42, 140, 255));
+        edit.setOnClickListener(v -> {
+            dlg.dismiss();
+            setControlsHidden(false);
+            snapshotLayouts();
+            setEditMode(true);
+            editModeBtn.setBackground(makeIconBg(false, Color.argb(230, 60, 200, 60), R.drawable.ic_check, 24));
+        });
+        String curName = SCHEME_CUSTOM.equals(cur) ? "Custom" : SCHEME_CASUAL.equals(cur) ? "Preset 2" : SCHEME_DPAD.equals(cur) ? "Preset 3" : "Preset 1";
+        final String resetName = curName;
+        android.widget.TextView reset = tsButton("Reset layout: " + curName, Color.argb(40, 220, 60, 50), Color.argb(255, 220, 60, 50));
+        reset.setOnClickListener(v -> { resetAllLayouts(); fillTouchSettings(content, dlg); });
+        android.widget.LinearLayout.LayoutParams l1 = new android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        l1.rightMargin = dpToPx(8);
+        btns.addView(edit, l1);
+        btns.addView(reset, new android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        content.addView(btns);
+        android.widget.TextView note = new android.widget.TextView(this);
+        note.setText("In Edit layout: drag a control to move it, pinch to resize, long-press for opacity. Each preset keeps its own layout.");
+        note.setTextColor(Color.argb(255, 143, 160, 179));
+        note.setTextSize(12);
+        note.setPadding(0, dpToPx(8), 0, 0);
+        content.addView(note);
+        final android.widget.LinearLayout analogBox = new android.widget.LinearLayout(this);
+        analogBox.setOrientation(android.widget.LinearLayout.VERTICAL);
+        content.addView(analogBox);
+        analogRefresh = () -> buildAnalogBox(analogBox);
+        analogRefresh.run();
+    }
+
     private void showCustomDialog() {
         final int W = Color.argb(210, 255, 255, 255);
         int sw = getResources().getDisplayMetrics().widthPixels, sh = getResources().getDisplayMetrics().heightPixels;
@@ -1278,7 +1678,6 @@ private float casualPadRadius(Button b) {
         list.addView(customRowView("SPACE", "SPACE", 48, 26, makeControlBg(false, W), null));
         list.addView(customRowView("ESC", "ESC", 44, 44, makeIconBg(true, W, R.drawable.ic_menu, 26), null));
         list.addView(customRowView("KEYS", "KEYS", 48, 30, makeIconBg(false, W, R.drawable.ic_keyboard, 24), null));
-        list.addView(customRowView("HIDE", "HIDE / SHOW", 48, 30, makeIconBg(false, W, R.drawable.ic_eye_open, 24), null));
         android.widget.ScrollView scroll = new android.widget.ScrollView(this);
         scroll.addView(list);
         panel.addView(scroll, new android.widget.LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (sh * 0.88f) - dpToPx(72)));
@@ -1740,7 +2139,7 @@ private float casualPadRadius(Button b) {
     private void addSchemeSelector(FrameLayout parent) {
         schemeBar = new android.widget.LinearLayout(this) {
             @Override public void setVisibility(int v) {
-                int eff = (schemeMin && v == View.VISIBLE) ? View.GONE : v;
+                int eff = View.GONE;
                 super.setVisibility(eff);
                 if (schemeInfo != null) schemeInfo.setVisibility(eff);
             }
@@ -1937,63 +2336,132 @@ private float casualPadRadius(Button b) {
         });
     }
 
-    private void addToggleButton(FrameLayout parent) {
-        final Button toggleBtn = new Button(this) {
-            @Override public void setVisibility(int v) {
-                super.setVisibility(controlHiddenInScheme("HIDE") ? View.GONE : v);
-            }
-        };
-        toggleBtn.setText("");
-        toggleBtn.setAlpha(loadLayoutAlpha("HIDE", 0.75f));
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dpToPx(47), dpToPx(27));
-        lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-        lp.topMargin = dpToPx(3);
-        final int hideBaseTop = lp.topMargin;
-        applyLayoutOverride("HIDE", lp, dpToPx(47), dpToPx(27));
-        toggleBtn.setLayoutParams(lp);
-        parent.addView(toggleBtn);
-        registerEditable("HIDE", toggleBtn, lp, false, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, hideBaseTop, 0, 0, dpToPx(47), dpToPx(27), 0.75f);
-        toggleBtn.setVisibility(View.VISIBLE);
+    private int globalOpacity = -1;
+    private boolean controlsHidden = false;
 
-        // Persisted across app restarts: if the player hid the controls (e.g. playing with a
-        // keyboard/gamepad), resuming a saved game later keeps them hidden instead of resetting
-        // to shown every launch.
-        final boolean[] hidden = {getSharedPreferences("touch_layout", MODE_PRIVATE).getBoolean("controls_hidden", false)};
-        Runnable applyHiddenState = () -> {
-            if (controlHiddenInScheme("HIDE")) hidden[0] = false;
-            int childCount = parent.getChildCount();
-            for (int i = 0; i < childCount; i++) {
-                android.view.View child = parent.getChildAt(i);
-                boolean isHighlight = false;
-                for (EditableControl c : editControls) {
-                    if (child == c.highlight) { isHighlight = true; break; }
-                }
-                if (child != toggleBtn && child != editOverlay && !isHighlight) {
-                    child.setVisibility(hidden[0] ? android.view.View.GONE : android.view.View.VISIBLE);
-                }
-            }
-            if (resetBtn != null) {
-                resetBtn.setVisibility((!hidden[0] && editMode) ? View.VISIBLE : View.GONE);
-                if (schemeBar != null) schemeBar.setVisibility((!hidden[0] && editMode) ? View.VISIBLE : View.GONE);
-            }
-            toggleBtn.setBackground(makeIconBg(false, Color.argb(210, 255, 255, 255),
-                hidden[0] ? R.drawable.ic_eye_closed : R.drawable.ic_eye_open, 24));
-        };
-        applyHiddenState.run(); // apply the persisted state immediately at startup
-
-        toggleBtn.setOnClickListener(v -> {
-            hidden[0] = !hidden[0];
-            getSharedPreferences("touch_layout", MODE_PRIVATE).edit().putBoolean("controls_hidden", hidden[0]).apply();
-            applyHiddenState.run();
-        });
+    private void setAllButtonOpacity(int pct) {
+        float a = pct / 100f;
+        String[] files = {"touch_layout", "touch_layout_casual", "touch_layout_dpad", "touch_layout_custom"};
+        for (String f : files) {
+            SharedPreferences.Editor ed = getSharedPreferences(f, MODE_PRIVATE).edit();
+            for (EditableControl c : editControls) ed.putFloat("layout_" + c.id + "_alpha", a);
+            ed.apply();
+        }
+        applyGlobalOpacity();
     }
 
-    /** Full-screen invisible catcher, always present (independent of touchOverlay's own visibility),
-     *  that only steps in when a menu is open AND touchOverlay is currently hidden (e.g. a full-screen
-     *  in-game menu like the ESC/options screen, where nativeIsInGame() reports false so our normal
-     *  aimView never gets a chance to run). Uses the same Choreographer-based force-release safety net
-     *  as the save-menu fix. When its condition isn't met it returns false immediately, passing the
-     *  touch through untouched to whatever's underneath. */
+    private void loadGlobalPrefs() {
+        android.content.SharedPreferences gp = getSharedPreferences("touch_global", MODE_PRIVATE);
+        globalOpacity = gp.getInt("opacity", -1);
+        controlsHidden = gp.getBoolean("hidden", false);
+    }
+
+    private void applyGlobalOpacity() {
+        if (touchOverlay != null) touchOverlay.setAlpha(1f);
+        for (EditableControl c : editControls) {
+            float a = loadLayoutAlpha(c.id, c.baseAlpha);
+            c.btn.setAlpha(editMode ? Math.max(0.5f, a) : a);
+        }
+        if (editModeBtn != null) {
+            editModeBtn.setAlpha(editMode || globalOpacity < 0 ? 0.75f : globalOpacity / 100f);
+        }
+    }
+
+    private void applyControlsHidden() {
+        if (touchOverlay == null) return;
+        for (int i = 0; i < touchOverlay.getChildCount(); i++) {
+            android.view.View child = touchOverlay.getChildAt(i);
+            if (child == editModeBtn || child == editOverlay || child == cancelBtn
+                || child == schemeBar || child == schemeInfo || child == resetBtn
+                || child == zoneHandleA || child == zoneHandleM) continue;
+            boolean isHighlight = false;
+            for (EditableControl c : editControls) {
+                if (child == c.highlight) { isHighlight = true; break; }
+            }
+            if (isHighlight) continue;
+            child.setVisibility(controlsHidden ? android.view.View.GONE : android.view.View.VISIBLE);
+        }
+    }
+
+    private void setControlsHidden(boolean h) {
+        controlsHidden = h;
+        getSharedPreferences("touch_global", MODE_PRIVATE).edit().putBoolean("hidden", h).apply();
+        applyControlsHidden();
+    }
+
+    private void addToggleButton(FrameLayout parent) {
+        loadGlobalPrefs();
+        applyControlsHidden();
+        applyGlobalOpacity();
+    }
+
+    private android.view.View tsHideRow() {
+        android.widget.LinearLayout row = new android.widget.LinearLayout(this);
+        row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8));
+        GradientDrawable rb = new GradientDrawable();
+        rb.setCornerRadius(dpToPx(12));
+        rb.setColor(Color.argb(30, 255, 255, 255));
+        row.setBackground(rb);
+        android.widget.TextView name = new android.widget.TextView(this);
+        name.setText("Hide/show");
+        name.setTextColor(Color.WHITE);
+        name.setTextSize(16);
+        row.addView(name, new android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        final FrameLayout swv = makeSwitchView();
+        row.addView(swv, new android.widget.LinearLayout.LayoutParams(dpToPx(56), dpToPx(30)));
+        paintSwitch(swv, !controlsHidden);
+        row.setOnClickListener(v -> {
+            setControlsHidden(!controlsHidden);
+            paintSwitch(swv, !controlsHidden);
+        });
+        return row;
+    }
+
+    private android.view.View tsSliderG(String label, final String unit, final int min, final int max,
+                                        final String file, final String key, final int def, final Runnable onChange) {
+        final android.content.SharedPreferences ap = getSharedPreferences(file, MODE_PRIVATE);
+        android.widget.LinearLayout box = new android.widget.LinearLayout(this);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        box.setPadding(0, dpToPx(8), 0, 0);
+        android.widget.LinearLayout head = new android.widget.LinearLayout(this);
+        head.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        android.widget.TextView name = new android.widget.TextView(this);
+        name.setText(label);
+        name.setTextColor(Color.WHITE);
+        name.setTextSize(15);
+        head.addView(name, new android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        final android.widget.TextView val = new android.widget.TextView(this);
+        val.setTextColor(Color.WHITE);
+        val.setTextSize(15);
+        val.setTypeface(null, android.graphics.Typeface.BOLD);
+        head.addView(val);
+        box.addView(head);
+        final android.widget.SeekBar sb = new android.widget.SeekBar(this);
+        sb.setMax(max - min);
+        int cur = ap.getInt(key, def);
+        sb.setProgress(cur - min);
+        val.setText(cur + unit);
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            sb.setProgressTintList(android.content.res.ColorStateList.valueOf(Color.argb(255, 60, 200, 60)));
+            sb.setThumbTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));
+            sb.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.argb(90, 255, 255, 255)));
+        }
+        sb.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(android.widget.SeekBar b, int p, boolean user) {
+                int v = p + min;
+                val.setText(v + unit);
+                ap.edit().putInt(key, v).apply();
+                onChange.run();
+            }
+            @Override public void onStartTrackingTouch(android.widget.SeekBar b) {}
+            @Override public void onStopTrackingTouch(android.widget.SeekBar b) {}
+        });
+        box.addView(sb);
+        return box;
+    }
+
     private void addMenuClickGuard() {
         View guard = new View(this);
         final boolean[] active = {false};
