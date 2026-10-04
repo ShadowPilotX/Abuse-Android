@@ -21,7 +21,7 @@ To better reflect modern game controls, the original arrow key controls have bee
 
 **Touch controls:**
 
-![touch controls](https://github.com/user-attachments/assets/624ca56c-1b93-4708-9d16-0600f1593b7a)
+![touch controls](https://github.com/user-attachments/assets/e1bb43b1-f4f4-4b1d-aaf8-d6f6a340ee07)
 
 Fire/aim: Tap to shoot, or hold and drag to aim. The reticle aiming speed directly tracks your finger movement speed.
 
@@ -57,13 +57,24 @@ Built and tested entirely within Termux on Android (aarch64), using:
 
 ## Credits
 
-- Original game: Crack dot Com (1996)
+- Original game: Crack dot Com (1995-1996)
 - Modern SDL2 source port: [apancik/Abuse_2025](https://github.com/apancik/Abuse_2025)
 - Android port: this repo
 
 ## Contributing
 
-Feel free to contribute! Touch controls in particular are still rough and could use love — PRs welcome for better touch/on-screen input, bug fixes, or general improvements.
+Contributions are welcome!  
+
+Feel free to submit pull requests for bug fixes, performance improvements, new features, or any other enhancements.
+
+## Source code releases
+[Original source code](https://archive.org/details/abuse_sourcecode)  
+[Anthony Kruize Abuse SDL port (2001)](http://web.archive.org/web/20070205093016/http://www.labyrinth.net.au/~trandor/abuse)  
+[Jeremy Scott Windows port (2001)](http://web.archive.org/web/20051023123223/http://www.webpages.uidaho.edu/~scot4875)  
+[Sam Hocevar Abuse SDl port (2011)](http://abuse.zoy.org)  
+[Xenoveritas SDL2 port (2014)](http://github.com/Xenoveritas/abuse)  
+[Antonio Radojkovic Abuse 1996](https://github.com/antrad/Abuse_1996)
+[apancik/Abuse_2025](https://github.com/apancik/Abuse_2025)
 
 ## License
 
