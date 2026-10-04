@@ -538,6 +538,7 @@ public class MainActivity extends SDLActivity {
         editModeBtn.setOnClickListener(v -> {
             if (!editMode) { showTouchSettings(); return; }
             setEditMode(false);
+            if (hiddenBeforeEdit) { setControlsHidden(true); hiddenBeforeEdit = false; }
             layoutSnapshot = null;
             new Handler().post(() -> showTouchSettings());
             editModeBtn.setBackground(makeIconBg(false,
@@ -1298,12 +1299,64 @@ private float casualPadRadius(Button b) {
                 ap.edit().putInt(key, v).apply();
                 loadAnalogTuning();
                 if (casualHud != null) casualHud.invalidate();
+                if (analogPreview != null) analogPreview.invalidate();
             }
             @Override public void onStartTrackingTouch(android.widget.SeekBar b) {}
             @Override public void onStopTrackingTouch(android.widget.SeekBar b) {}
         });
         box.addView(sb);
         return box;
+    }
+
+    private AnalogPreview analogPreview;
+
+    private class AnalogPreview extends android.view.View {
+        private final android.graphics.Paint p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        private final boolean aim, floating;
+        private float dx, dy;
+        AnalogPreview(android.content.Context c, boolean aim, boolean floating) {
+            super(c);
+            this.aim = aim;
+            this.floating = floating;
+        }
+        private float radius() { return dpToPx(floating ? CASUAL_RADIUS_DP : 56); }
+        @Override protected void onDraw(android.graphics.Canvas cv) {
+            float cx = getWidth() / 2f, cy = getHeight() / 2f, r = radius();
+            float mag = Math.min(1f, (float) Math.hypot(dx, dy) / r);
+            boolean hot = aim && mag >= CASUAL_FIRE_ZONE;
+            p.setStyle(android.graphics.Paint.Style.STROKE);
+            p.setStrokeWidth(dpToPx(2));
+            p.setColor(Color.argb(217, 255, 255, 255));
+            cv.drawCircle(cx, cy, r, p);
+            if (aim) {
+                p.setStyle(android.graphics.Paint.Style.FILL);
+                p.setColor(Color.argb(45, 255, 255, 255));
+                cv.drawCircle(cx, cy, r * CASUAL_DEADZONE, p);
+                p.setStyle(android.graphics.Paint.Style.STROKE);
+                p.setColor(Color.argb(242, 255, 90, 80));
+                cv.drawCircle(cx, cy, r * CASUAL_FIRE_ZONE, p);
+            }
+            p.setStyle(android.graphics.Paint.Style.FILL);
+            p.setColor(hot ? Color.argb(255, 255, 90, 80) : Color.argb(230, 255, 255, 255));
+            cv.drawCircle(cx + dx, cy + dy, dpToPx(18), p);
+            drawCrosshairIcon(cv, p, cx + dx, cy + dy, hot, 1f);
+        }
+        @Override public boolean onTouchEvent(MotionEvent e) {
+            int a = e.getActionMasked();
+            if (a == MotionEvent.ACTION_DOWN || a == MotionEvent.ACTION_MOVE) {
+                if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(true);
+                float cx = getWidth() / 2f, cy = getHeight() / 2f, r = radius();
+                float x = e.getX() - cx, y = e.getY() - cy, d = (float) Math.hypot(x, y);
+                if (d > r) { x = x / d * r; y = y / d * r; }
+                dx = x;
+                dy = y;
+            } else if (a == MotionEvent.ACTION_UP || a == MotionEvent.ACTION_CANCEL) {
+                dx = 0;
+                dy = 0;
+            }
+            invalidate();
+            return true;
+        }
     }
 
     private void buildAnalogBox(final android.widget.LinearLayout box) {
@@ -1314,11 +1367,28 @@ private float casualPadRadius(Button b) {
         boolean showSize = custom && ("floating".equals(cAim()) || "floating".equals(cMove()));
         if (!showAim && !showSize) return;
         box.addView(tsSection("Analog"));
+        android.widget.LinearLayout rowl = new android.widget.LinearLayout(this);
+        rowl.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+        rowl.setGravity(Gravity.CENTER_VERTICAL);
+        analogPreview = new AnalogPreview(this, showAim, showSize);
+        int side = dpToPx(2 * (showSize ? 90 : 56) + 16);
+        rowl.addView(analogPreview, new android.widget.LinearLayout.LayoutParams(side, side));
+        android.widget.LinearLayout col = new android.widget.LinearLayout(this);
+        col.setOrientation(android.widget.LinearLayout.VERTICAL);
+        col.setPadding(dpToPx(16), 0, 0, 0);
         if (showAim) {
-            box.addView(tsSlider("Deadzone", "%", 5, 40, "a_dz", 15));
-            box.addView(tsSlider("Fire ring", "%", 50, 95, "a_fz", 80));
+            col.addView(tsSlider("Deadzone", "%", 5, 40, "a_dz", 15));
+            col.addView(tsSlider("Fire ring", "%", 50, 95, "a_fz", 80));
         }
-        if (showSize) box.addView(tsSlider("Floating pad size", "dp", 40, 90, "a_size", 56));
+        if (showSize) col.addView(tsSlider("Floating pad size", "dp", 40, 90, "a_size", 56));
+        rowl.addView(col, new android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        box.addView(rowl);
+        android.widget.TextView hint = new android.widget.TextView(this);
+        hint.setText("Drag the knob to try it. Past the red ring = fire.");
+        hint.setTextColor(Color.argb(255, 143, 160, 179));
+        hint.setTextSize(12);
+        hint.setPadding(0, dpToPx(4), 0, 0);
+        box.addView(hint);
         android.widget.TextView def = tsButton("Default values", Color.argb(30, 255, 255, 255), Color.argb(120, 255, 255, 255));
         def.setOnClickListener(v -> {
             getSharedPreferences("analog_tuning", MODE_PRIVATE).edit().clear().apply();
@@ -1333,6 +1403,7 @@ private float casualPadRadius(Button b) {
     }
 
     private Button cancelBtn;
+    private boolean hiddenBeforeEdit = false;
     private java.util.HashMap<String, java.util.HashMap<String, Object>> layoutSnapshot;
     private final String[] SNAP_FILES = {"touch_layout", "touch_layout_casual", "touch_layout_dpad", "touch_layout_custom", "control_scheme"};
 
@@ -1371,6 +1442,7 @@ private float casualPadRadius(Button b) {
     private void cancelEditSession() {
         restoreLayouts();
         setEditMode(false);
+        if (hiddenBeforeEdit) { setControlsHidden(true); hiddenBeforeEdit = false; }
         editModeBtn.setBackground(makeIconBg(false, Color.argb(210, 255, 255, 255), R.drawable.ic_gear, 24));
         new Handler().post(() -> showTouchSettings());
     }
@@ -1612,6 +1684,7 @@ private float casualPadRadius(Button b) {
         android.widget.TextView edit = tsButton("Edit layout", Color.argb(255, 42, 140, 255), Color.argb(255, 42, 140, 255));
         edit.setOnClickListener(v -> {
             dlg.dismiss();
+            hiddenBeforeEdit = controlsHidden;
             setControlsHidden(false);
             snapshotLayouts();
             setEditMode(true);
