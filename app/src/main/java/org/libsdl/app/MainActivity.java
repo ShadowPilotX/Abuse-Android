@@ -1620,7 +1620,11 @@ private float casualPadRadius(Button b) {
         String curName = SCHEME_CUSTOM.equals(cur) ? "Custom" : SCHEME_CASUAL.equals(cur) ? "Preset 2" : SCHEME_DPAD.equals(cur) ? "Preset 3" : "Preset 1";
         final String resetName = curName;
         android.widget.TextView reset = tsButton("Reset layout: " + curName, Color.argb(40, 220, 60, 50), Color.argb(255, 220, 60, 50));
-        reset.setOnClickListener(v -> { resetAllLayouts(); fillTouchSettings(content, dlg); });
+        reset.setOnClickListener(v -> {
+            resetAllLayouts();
+            if (globalOpacity >= 0) setAllButtonOpacity(globalOpacity);
+            fillTouchSettings(content, dlg);
+        });
         android.widget.LinearLayout.LayoutParams l1 = new android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         l1.rightMargin = dpToPx(8);
         btns.addView(edit, l1);
