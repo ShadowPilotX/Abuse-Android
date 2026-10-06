@@ -61,12 +61,6 @@ Built and tested entirely within Termux on Android (aarch64), using:
 - Modern SDL2 source port: [apancik/Abuse_2025](https://github.com/apancik/Abuse_2025)
 - Android port: this repo
 
-## Contributing
-
-Contributions are welcome!  
-
-Feel free to submit pull requests for bug fixes, performance improvements, new features, or any other enhancements.
-
 ## Source code releases
 [Original source code](https://archive.org/details/abuse_sourcecode)  
 [Anthony Kruize Abuse SDL port (2001)](http://web.archive.org/web/20070205093016/http://www.labyrinth.net.au/~trandor/abuse)  
